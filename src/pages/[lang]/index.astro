@@ -1,7 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
-import SnakeHero from '../../components/SnakeHero.astro';
+import HeroScene from '../../components/HeroScene.astro';
 import ProjectCard from '../../components/ProjectCard.astro';
 import { t, type Lang } from '../../i18n/ui';
 import { profile, stats, publications, awards, certificates, experience, education, skills, languagesSpoken } from '../../data/profile';
@@ -19,7 +19,7 @@ const research = all.filter((p) => p.data.category === 'research');
 
 <Base lang={lang} title={`${profile.name} — ${lang === 'en' ? 'Mechatronics Engineer' : 'Mechatronik-Ingenieur'}`} description={tr('hero.lead')}>
   <section class="hero">
-    <SnakeHero />
+    <HeroScene lang={lang} />
     <div class="wrap hero-inner">
       <p class="kicker" data-reveal>{tr('hero.eyebrow')}</p>
       <h1 data-reveal>Anushika<br />Jayasekara</h1>
@@ -28,6 +28,12 @@ const research = all.filter((p) => p.data.category === 'research');
         <a class="btn primary" href="#industry">{tr('hero.cta.work')}</a>
         <a class="btn" href="#contact">{tr('hero.cta.contact')}</a>
       </div>
+      <p class="explore mono" data-reveal>
+        <span>{tr('hero.explore')}</span>
+        <a href={`/${lang}/projects/snake-robot/`} data-scene="snake">{tr('hero.explore.snake')}</a>
+        <a href={`/${lang}/projects/ornithopter/`} data-scene="bird">{tr('hero.explore.bird')}</a>
+        <a href="#industry" data-scene="jig">{tr('hero.explore.jig')}</a>
+      </p>
     </div>
     <div class="wrap stats">
       {stats.map((s) => (
@@ -167,7 +173,12 @@ const research = all.filter((p) => p.data.category === 'research');
 <style>
   .hero { position: relative; border-top: 0; padding-top: clamp(110px, 16vh, 180px); padding-bottom: 0; overflow: hidden; }
   .hero::after { content: ''; position: absolute; inset: auto 0 0 0; height: 160px; background: linear-gradient(transparent, var(--bg)); pointer-events: none; }
-  .hero-inner { position: relative; z-index: 1; display: grid; gap: 26px; max-width: var(--max); }
+  .hero-inner { position: relative; z-index: 1; display: grid; gap: 26px; max-width: var(--max); pointer-events: none; }
+  .hero-inner a, .hero-inner .lead, .hero-inner h1 { pointer-events: auto; }
+  .explore { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 11px; margin-top: 6px; }
+  .explore span { color: var(--faint); }
+  .explore a { color: var(--muted); border-bottom: 1px solid var(--line); padding-bottom: 2px; transition: color .2s, border-color .2s; }
+  .explore a:hover, .explore a:focus-visible { color: var(--accent); border-color: var(--accent); }
   .hero-inner > * { max-width: 600px; }
   .lead { font-size: clamp(17px, 1.6vw, 20px); color: var(--muted); line-height: 1.6; }
   .ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }

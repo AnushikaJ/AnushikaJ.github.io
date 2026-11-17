@@ -16,7 +16,7 @@ Built with [Astro](https://astro.build). Every push to `main` deploys automatica
 | Experience, publications, awards, skills, certificates | `src/data/profile.ts` |
 | Buttons, headings, menu text | `src/i18n/ui.ts` |
 | Colours and fonts | `src/styles/global.css` |
-| Home-page snake animation | `src/components/SnakeHero.astro` |
+| Home-page animation (snake, ornithopter, jig) | `src/components/HeroScene.astro` |
 
 A project without a `cover` photo shows a line drawing instead; set `art:` to `gem`, `mudskipper`, `seal`, `heatsink`, `box` or `snake`.
 
