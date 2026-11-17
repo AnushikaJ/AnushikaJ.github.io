@@ -3,8 +3,10 @@ import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import HeroScene from '../../components/HeroScene.astro';
 import ProjectCard from '../../components/ProjectCard.astro';
+import Lab from '../../components/Lab.astro';
+import SkillSphere from '../../components/SkillSphere.astro';
 import { t, type Lang } from '../../i18n/ui';
-import { profile, stats, publications, awards, certificates, experience, education, skills, languagesSpoken } from '../../data/profile';
+import { profile, stats, publications, awards, certificates, experience, education, coursework, languagesSpoken } from '../../data/profile';
 
 export function getStaticPaths() {
   return [{ params: { lang: 'en' } }, { params: { lang: 'de' } }];
@@ -20,7 +22,7 @@ const research = all.filter((p) => p.data.category === 'research');
 <Base lang={lang} title={`${profile.name} — ${lang === 'en' ? 'Mechatronics Engineer' : 'Mechatronik-Ingenieur'}`} description={tr('hero.lead')}>
   <section class="hero">
     <HeroScene lang={lang} />
-    <div class="wrap hero-inner">
+    <div class="wrap hero-inner" data-parallax>
       <p class="kicker" data-reveal>{tr('hero.eyebrow')}</p>
       <h1 data-reveal>Anushika<br />Jayasekara</h1>
       <p class="lead" data-reveal>{tr('hero.lead')}</p>
@@ -38,10 +40,21 @@ const research = all.filter((p) => p.data.category === 'research');
     <div class="wrap stats">
       {stats.map((s) => (
         <div class="stat" data-reveal>
-          <span class="v">{s.value}</span>
+          <span class="v" data-count>{s.value}</span>
           <span class="l">{s.label[lang]}</span>
         </div>
       ))}
+    </div>
+  </section>
+
+  <section id="lab">
+    <div class="wrap">
+      <header class="section-head" data-reveal>
+        <span class="kicker">{tr('lab.kicker')}</span>
+        <h2>{tr('lab.title')}</h2>
+        <p>{tr('lab.lead')}</p>
+      </header>
+      <div data-reveal><Lab lang={lang} /></div>
     </div>
   </section>
 
@@ -52,7 +65,7 @@ const research = all.filter((p) => p.data.category === 'research');
         <h2>{tr('industry.title')}</h2>
         <p>{tr('industry.lead')}</p>
       </header>
-      <div class="grid">
+      <div class="grid" data-stagger>
         {industry.map((p) => <ProjectCard project={p} lang={lang} />)}
       </div>
     </div>
@@ -65,9 +78,20 @@ const research = all.filter((p) => p.data.category === 'research');
         <h2>{tr('research.title')}</h2>
         <p>{tr('research.lead')}</p>
       </header>
-      <div class="grid two">
+      <div class="grid two" data-stagger>
         {research.map((p, i) => <ProjectCard project={p} lang={lang} large={i < 2} />)}
       </div>
+    </div>
+  </section>
+
+  <section id="skills">
+    <div class="wrap">
+      <header class="section-head" data-reveal>
+        <span class="kicker">{tr('skills.kicker')}</span>
+        <h2>{tr('skills.title')}</h2>
+        <p>{tr('skills.lead')}</p>
+      </header>
+      <div data-reveal><SkillSphere lang={lang} /></div>
     </div>
   </section>
 
@@ -142,15 +166,8 @@ const research = all.filter((p) => p.data.category === 'research');
               </li>
             ))}
           </ol>
-          <h3 class="sub" data-reveal>{tr('about.skills')}</h3>
-          <div class="skills">
-            {skills.map((s) => (
-              <div class="skill" data-reveal>
-                <span class="mono">{s.group[lang]}</span>
-                <div class="chips">{s.items.map((i) => <span class="chip">{i}</span>)}</div>
-              </div>
-            ))}
-          </div>
+          <h3 class="sub" data-reveal>{tr('about.coursework')}</h3>
+          <div class="chips" data-reveal data-stagger>{coursework.map((c) => <span class="chip">{c}</span>)}</div>
         </div>
       </div>
     </div>

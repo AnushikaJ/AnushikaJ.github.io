@@ -3,7 +3,7 @@ title: Amphibischer Schlammspringer-Roboter
 summary: Ein biomimetischer Überwachungsroboter nach dem Vorbild des Schlammspringers – kriecht an Land und schwimmt im Wasser, mit ESP32-CAM-Video und autonomer Hindernisvermeidung.
 category: research
 order: 13
-period: "2024"
+period: 2024 – 2025
 role: Konstruktion & Bau
 tools: [ESP32-CAM, Biomimetisches Design, Hindernisvermeidung, 3D-Druck]
 art: mudskipper

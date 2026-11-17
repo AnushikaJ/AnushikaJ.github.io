@@ -40,8 +40,10 @@ const home = `/${lang}/`;
           <span class="brand-name">Anushika Jayasekara</span>
         </a>
         <nav aria-label="Main">
+          <a href={`${home}#lab`}>{tr('nav.lab')}</a>
           <a href={`${home}#industry`}>{tr('nav.industry')}</a>
           <a href={`${home}#research`}>{tr('nav.research')}</a>
+          <a href={`${home}#skills`}>{tr('nav.skills')}</a>
           <a href={`${home}#publications`}>{tr('nav.publications')}</a>
           <a href={`${home}#about`}>{tr('nav.about')}</a>
           <a href={`${home}#contact`}>{tr('nav.contact')}</a>
@@ -70,12 +72,64 @@ const home = `/${lang}/`;
       </div>
     </footer>
 
+    <div class="progress" aria-hidden="true"></div>
     <script>
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // Stagger: children of [data-stagger] reveal one after another.
+      document.querySelectorAll<HTMLElement>('[data-stagger]').forEach((box) => {
+        [...box.children].forEach((c, i) => {
+          const el = c as HTMLElement;
+          if (!el.hasAttribute('data-reveal')) el.setAttribute('data-reveal', '');
+          el.style.transitionDelay = `${Math.min(i, 8) * 90}ms`;
+        });
+      });
+
+      // Count-up for numbers like "20 mo", "−63%", "< 12 min".
+      const countUp = (el: HTMLElement) => {
+        const full = el.textContent ?? '';
+        const m = full.match(/(\d+(?:[.,]\d+)?)/);
+        if (!m || reduce) return;
+        const target = parseFloat(m[1].replace(',', '.'));
+        const dec = m[1].includes('.') || m[1].includes(',') ? 1 : 0;
+        const [pre, post] = [full.slice(0, m.index), full.slice((m.index ?? 0) + m[1].length)];
+        const t0 = performance.now(), dur = 1400;
+        const step = (now: number) => {
+          const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+          el.textContent = pre + (target * e).toFixed(dec) + post;
+          if (k < 1) requestAnimationFrame(step); else el.textContent = full;
+        };
+        requestAnimationFrame(step);
+      };
+
       const io = new IntersectionObserver(
-        (entries) => entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }),
+        (entries) => entries.forEach((e) => {
+          if (!e.isIntersecting) return;
+          e.target.classList.add('in');
+          const t = e.target as HTMLElement;
+          if (t.style.transitionDelay) setTimeout(() => (t.style.transitionDelay = ''), 1800);
+          e.target.querySelectorAll<HTMLElement>('[data-count]').forEach(countUp);
+          io.unobserve(e.target);
+        }),
         { rootMargin: '0px 0px -8% 0px', threshold: 0.08 }
       );
       document.querySelectorAll('[data-reveal]').forEach((el) => io.observe(el));
+
+      // Scroll progress bar + gentle hero parallax.
+      const bar = document.querySelector<HTMLElement>('.progress')!;
+      const hero = document.querySelector<HTMLElement>('[data-parallax]');
+      let ticking = false;
+      const onScroll = () => {
+        const y = scrollY, max = document.documentElement.scrollHeight - innerHeight;
+        bar.style.transform = `scaleX(${max > 0 ? y / max : 0})`;
+        if (hero && !reduce && y < innerHeight * 1.2) {
+          hero.style.transform = `translateY(${y * 0.18}px)`;
+          hero.style.opacity = String(Math.max(0, 1 - y / (innerHeight * 0.85)));
+        }
+        ticking = false;
+      };
+      addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
+      onScroll();
     </script>
   </body>
 </html>
@@ -87,13 +141,14 @@ const home = `/${lang}/`;
     background: rgba(10, 12, 15, 0.72);
     border-bottom: 1px solid var(--line-soft);
   }
-  .nav-inner { height: 64px; display: flex; align-items: center; gap: 32px; }
+  .nav-inner { height: 64px; display: flex; align-items: center; gap: 28px; }
+  .progress { position: fixed; top: 0; left: 0; right: 0; height: 2px; background: var(--accent); transform-origin: 0 50%; transform: scaleX(0); z-index: 60; opacity: .85; }
   .brand { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 15px; }
   .mark {
     width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 8px;
     display: grid; place-items: center; font-family: var(--mono); font-size: 11px; color: var(--accent);
   }
-  nav { display: flex; gap: 26px; margin-left: auto; font-size: 14px; color: var(--muted); }
+  nav { display: flex; gap: 22px; margin-left: auto; font-size: 14px; color: var(--muted); }
   nav a { transition: color .2s; }
   nav a:hover { color: var(--text); }
   .lang { font-family: var(--mono); font-size: 12px; color: var(--faint); display: flex; gap: 6px; }
@@ -104,6 +159,7 @@ const home = `/${lang}/`;
   .foot .muted { color: var(--faint); }
   .foot .links { margin-left: auto; display: flex; gap: 20px; color: var(--muted); }
   .foot .links a:hover { color: var(--text); }
+  @media (max-width: 1060px) { nav { display: none; } .lang { margin-left: auto; } }
   @media (max-width: 860px) {
     nav { display: none; }
     .lang { margin-left: auto; }

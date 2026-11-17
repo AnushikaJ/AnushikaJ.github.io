@@ -13,7 +13,7 @@ export const profile = {
 };
 
 export const stats: { value: string; label: L }[] = [
-  { value: '2 yrs', label: { en: 'industry experience in IoT hardware production', de: 'Industrieerfahrung in der IoT-Hardwarefertigung' } },
+  { value: '20 mo', label: { en: 'industry experience in IoT hardware production', de: 'Industrieerfahrung in der IoT-Hardwarefertigung' } },
   { value: '< 12 min', label: { en: 'automated calibration, flashing & NFC per device', de: 'automatisierte Kalibrierung, Flashen & NFC pro Gerät' } },
   { value: '−63%', label: { en: 'packaging unit cost after redesign', de: 'Stückkosten der Verpackung nach Redesign' } },
   { value: '100%', label: { en: 'grasp success over 20 randomised trials', de: 'Greiferfolg in 20 randomisierten Versuchen' } },
@@ -86,25 +86,35 @@ export const experience: { role: L; org: string; period: string; points: L[] }[]
 
 export const education: { degree: L; school: string; period: string; note: L }[] = [
   {
-    degree: { en: 'BSc Eng (Hons), Mechanical Engineering', de: 'BSc Eng (Hons), Maschinenbau' },
+    degree: { en: 'BSc Eng (Hons), Mechanical Engineering · minor in Mechatronics', de: 'BSc Eng (Hons), Maschinenbau · Nebenfach Mechatronik' },
     school: 'University of Sri Jayewardenepura',
     period: '2022 – 2026',
     note: {
-      en: 'Second Class Upper · GPA 3.31/4.00 · semester 8 SGPA 3.80, first in batch',
-      de: 'Second Class Upper · GPA 3,31/4,00 · 8. Semester SGPA 3,80, Jahrgangsbester',
+      en: 'Second Class Upper · GPA 3.31/4.00 · semester 8 SGPA 3.80, Dean’s List, first in batch · taught in English',
+      de: 'Second Class Upper · GPA 3,31/4,00 · 8. Semester SGPA 3,80, Dean’s List, Jahrgangsbester · Unterrichtssprache Englisch',
     },
   },
 ];
 
 export const skills: { group: L; items: string[] }[] = [
-  { group: { en: 'CAD & design', de: 'CAD & Konstruktion' }, items: ['SolidWorks', 'Fusion 360', 'AutoCAD', 'GD&T', 'DFM / DFA'] },
-  { group: { en: 'Embedded', de: 'Embedded' }, items: ['STM32', 'ESP32', 'KiCad', 'Linux SBCs', 'NFC', 'Steppers & servos'] },
-  { group: { en: 'Robotics & control', de: 'Robotik & Regelung' }, items: ['ROS 2', 'Pixhawk / ArduPilot', 'MAVLink', 'EKF', 'MATLAB / Simulink', 'CoppeliaSim'] },
-  { group: { en: 'Vision & software', de: 'Vision & Software' }, items: ['Python', 'C++', 'Rust', 'OpenCV', 'YOLO', 'Git'] },
-  { group: { en: 'Manufacturing', de: 'Fertigung' }, items: ['CNC milling', '3D printing', 'Laser cutting', 'Injection moulding', 'Silicone casting'] },
+  { group: { en: 'CAD & design', de: 'CAD & Konstruktion' }, items: ['SolidWorks', 'Fusion 360', 'AutoCAD', 'GD&T', 'DFM / DFA', 'Design for Logistics'] },
+  { group: { en: 'Embedded systems', de: 'Embedded-Systeme' }, items: ['ESP32', 'STM32', 'Arduino', 'KiCad', 'Linux SBCs', 'NFC'] },
+  { group: { en: 'Motors & sensors', de: 'Antriebe & Sensorik' }, items: ['NEMA 17/23 steppers', 'DC & servo control', 'Load cells', 'Sensor calibration'] },
+  { group: { en: 'Robotics & control', de: 'Robotik & Regelung' }, items: ['ROS 2', 'Pixhawk / ArduPilot', 'MAVLink', 'EKF sensor fusion', 'Control modelling'] },
+  { group: { en: 'Machine vision', de: 'Bildverarbeitung' }, items: ['OpenCV', 'YOLO', 'Detection pipelines'] },
+  { group: { en: 'Simulation', de: 'Simulation' }, items: ['MATLAB / Simulink', 'Ansys', 'SolidWorks Simulation', 'CoppeliaSim'] },
+  { group: { en: 'Manufacturing', de: 'Fertigung' }, items: ['CNC milling', 'Injection moulding', 'Laser cutting', '3D printing', 'Silicone moulding'] },
+  { group: { en: 'Programming', de: 'Programmierung' }, items: ['Python', 'C++', 'Rust', 'MATLAB', 'Lua', 'Git'] },
+];
+
+export const coursework: string[] = [
+  'Robotics and Vision Systems', 'Smart Sensors, Actuators and Intelligent Systems', 'Theory of Control Systems',
+  'Fundamentals of Mechatronics', 'Microcontroller and Microprocessor Based Systems', 'Advanced Automation',
+  'Computer-Based Measurement Systems', 'Introduction to Micromechatronics', 'Dynamics of Mechanical Systems',
+  'Advanced Machine Dynamics', 'Design of Machine Elements',
 ];
 
 export const languagesSpoken: L = {
-  en: 'Sinhala (native) · English (fluent) · German (learning)',
-  de: 'Singhalesisch (Muttersprache) · Englisch (fließend) · Deutsch (Grundkenntnisse)',
+  en: 'Sinhala (native) · English (IELTS Academic 7.0) · German (learning)',
+  de: 'Singhalesisch (Muttersprache) · Englisch (IELTS Academic 7.0) · Deutsch (Grundkenntnisse)',
 };

@@ -3,7 +3,7 @@ title: Autonomer Schlagflügel-Ornithopter
 summary: Autonome Wegpunktnavigation ohne GPS in Innenräumen für ein Schlagflügel-Fluggerät mit 1,9 m Spannweite – Abschlussprojekt mit der einzigen Note A im Jahrgang.
 category: research
 order: 11
-period: Dez. 2025 – Jul. 2026
+period: Dez. 2025 – Jun. 2026
 role: Abschlussprojekt-Team · Navigation & Bodenstation
 tools: [Pixhawk, ArduPlane, EKF-Sensorfusion, MAVLink, ESP32-Telemetrie, Python]
 cover: /projects/ornithopter/cover.jpg

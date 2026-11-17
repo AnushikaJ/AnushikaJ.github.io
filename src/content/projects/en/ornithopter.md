@@ -3,7 +3,7 @@ title: Autonomous Flapping-Wing Ornithopter
 summary: Autonomous waypoint navigation indoors, without GPS, for a 1.9 m flapping-wing aircraft. Final-year project and the only Grade A in the batch.
 category: research
 order: 11
-period: Dec 2025 – Jul 2026
+period: Dec 2025 – Jun 2026
 role: Final-year project team · navigation & ground station
 tools: [Pixhawk, ArduPlane, EKF sensor fusion, MAVLink, ESP32 telemetry, Python]
 cover: /projects/ornithopter/cover.jpg

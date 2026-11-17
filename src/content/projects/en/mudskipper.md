@@ -3,7 +3,7 @@ title: Mudskipper Amphibious Robot
 summary: A biomimetic surveillance robot inspired by the mudskipper fish. It crawls on land and swims in water, with ESP32-CAM video and autonomous obstacle avoidance.
 category: research
 order: 13
-period: "2024"
+period: 2024 – 2025
 role: Design & build
 tools: [ESP32-CAM, Biomimetic design, Obstacle avoidance, 3D printing]
 art: mudskipper

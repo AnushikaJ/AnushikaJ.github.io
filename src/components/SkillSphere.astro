@@ -1,0 +1,108 @@
+---
+// A slowly rotating 3D sphere of skills. Drag to spin it, hover a skill or a category to highlight it.
+import { skills } from '../data/profile';
+import type { Lang } from '../i18n/ui';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const tags = skills.flatMap((g, gi) => g.items.map((name) => ({ name, gi })));
+const hint = lang === 'en' ? 'Drag to spin · hover to explore' : 'Ziehen zum Drehen · anfahren zum Erkunden';
+---
+
+<div class="sphere-block">
+  <div class="sphere" aria-hidden="true">
+    <div class="core"><span class="core-label mono">{hint}</span></div>
+    {tags.map((t) => <span class="tag" data-g={t.gi}>{t.name}</span>)}
+  </div>
+  <ul class="legend" aria-label={lang === 'en' ? 'Skill groups' : 'Kompetenzbereiche'}>
+    {skills.map((g, gi) => (
+      <li data-g={gi} tabindex="0">
+        <span class="mono name">{g.group[lang]}</span>
+        <span class="items">{g.items.join(' · ')}</span>
+      </li>
+    ))}
+  </ul>
+</div>
+
+<script>
+  const root = document.querySelector<HTMLElement>('.sphere')!;
+  const tags = [...root.querySelectorAll<HTMLElement>('.tag')];
+  const legend = [...document.querySelectorAll<HTMLElement>('.legend li')];
+  const label = root.querySelector<HTMLElement>('.core-label')!;
+  const hintText = label.textContent;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Even spread of points on a sphere (Fibonacci lattice).
+  const n = tags.length, golden = Math.PI * (3 - Math.sqrt(5));
+  const pts = tags.map((_, i) => {
+    const y = 1 - (i / (n - 1)) * 2, r = Math.sqrt(1 - y * y), th = golden * i;
+    return { x: Math.cos(th) * r, y, z: Math.sin(th) * r };
+  });
+
+  let ax = -0.25, ay = 0, vx = 0.0016, vy = 0.0042, R = 220, dragging = false, lx = 0, ly = 0, focusG: string | null = null;
+  const size = () => { R = Math.min(root.clientWidth, 560) * 0.4; };
+  size(); new ResizeObserver(size).observe(root);
+
+  function render() {
+    const cx = Math.cos(ax), sx = Math.sin(ax), cy = Math.cos(ay), sy = Math.sin(ay);
+    pts.forEach((p, i) => {
+      // rotate around Y then X
+      const x1 = p.x * cy + p.z * sy, z1 = -p.x * sy + p.z * cy;
+      const y2 = p.y * cx - z1 * sx, z2 = p.y * sx + z1 * cx;
+      const scale = 0.62 + 0.38 * ((z2 + 1) / 2);
+      const el = tags[i];
+      const match = focusG === null || el.dataset.g === focusG;
+      el.style.transform = `translate(-50%, -50%) translate3d(${(x1 * R).toFixed(1)}px, ${(y2 * R).toFixed(1)}px, 0) scale(${scale.toFixed(3)})`;
+      el.style.opacity = String(match ? 0.25 + 0.75 * ((z2 + 1) / 2) : 0.08);
+      el.style.zIndex = String(Math.round((z2 + 1) * 100));
+      el.classList.toggle('hl', focusG !== null && match);
+    });
+  }
+  function loop() {
+    if (!dragging && !reduce) { ay += vy; ax += vx * Math.sin(performance.now() / 4000) * 0.4; vy += (0.0042 - vy) * 0.02; }
+    render(); if (!reduce) requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  root.addEventListener('pointerdown', (e) => { dragging = true; lx = e.clientX; ly = e.clientY; root.setPointerCapture(e.pointerId); root.classList.add('grab'); });
+  root.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY;
+    ay += dx * 0.006; ax -= dy * 0.006; vy = dx * 0.006; if (reduce) render();
+  });
+  const end = () => { dragging = false; root.classList.remove('grab'); };
+  root.addEventListener('pointerup', end); root.addEventListener('pointercancel', end);
+
+  const setFocus = (g: string | null) => {
+    focusG = g;
+    legend.forEach((li) => li.classList.toggle('on', li.dataset.g === g));
+    label.textContent = g === null ? hintText : legend.find((li) => li.dataset.g === g)!.querySelector('.name')!.textContent;
+    label.classList.toggle('active', g !== null);
+    if (reduce) render();
+  };
+  tags.forEach((t) => { t.addEventListener('mouseenter', () => setFocus(t.dataset.g!)); t.addEventListener('mouseleave', () => setFocus(null)); });
+  legend.forEach((li) => {
+    li.addEventListener('mouseenter', () => setFocus(li.dataset.g!)); li.addEventListener('mouseleave', () => setFocus(null));
+    li.addEventListener('focus', () => setFocus(li.dataset.g!)); li.addEventListener('blur', () => setFocus(null));
+  });
+</script>
+
+<style>
+  .sphere-block { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 50px; align-items: center; }
+  .sphere { position: relative; aspect-ratio: 1; max-width: 560px; width: 100%; margin-inline: auto; cursor: grab; touch-action: pan-y; user-select: none; }
+  .sphere.grab { cursor: grabbing; }
+  .core { position: absolute; inset: 22%; border-radius: 50%; display: grid; place-items: center; text-align: center;
+    background: radial-gradient(circle, rgba(111,183,255,.10), rgba(111,183,255,0) 65%); border: 1px dashed rgba(111,183,255,.14); }
+  .core-label { max-width: 60%; font-size: 10px; line-height: 1.6; transition: color .3s; }
+  .core-label.active { color: var(--accent); font-size: 12px; }
+  .tag { position: absolute; left: 50%; top: 50%; white-space: nowrap; font-size: 14px; font-weight: 500; color: var(--text);
+    padding: 4px 10px; border-radius: 999px; border: 1px solid transparent; transition: color .25s, border-color .25s, background .25s; will-change: transform; }
+  .tag:hover, .tag.hl { color: #fff; border-color: rgba(111,183,255,.55); background: rgba(111,183,255,.12); }
+  .legend { list-style: none; padding: 0; margin: 0; display: grid; }
+  .legend li { display: grid; grid-template-columns: 170px 1fr; gap: 16px; padding: 13px 0; border-top: 1px solid var(--line-soft); cursor: default; transition: background .25s; outline: none; }
+  .legend li .items { color: var(--muted); font-size: 14px; transition: color .25s; }
+  .legend li.on .name { color: var(--accent); }
+  .legend li.on .items { color: var(--text); }
+  @media (max-width: 980px) { .sphere-block { grid-template-columns: 1fr; } .legend li { grid-template-columns: 1fr; gap: 4px; } }
+  @media (max-width: 640px) { .tag { font-size: 12px; } }
+</style>
