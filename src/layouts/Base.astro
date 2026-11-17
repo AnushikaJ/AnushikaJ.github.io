@@ -31,6 +31,9 @@ const home = `/${lang}/`;
     <meta name="theme-color" content="#0a0c0f" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="alternate" hreflang={other} href={new URL(switchHref, Astro.site)} />
+    <script is:inline>
+      try { var th = localStorage.getItem('theme'); if (th === 'light') document.documentElement.dataset.theme = 'light'; } catch (e) {}
+    </script>
   </head>
   <body>
     <header class="nav">
@@ -48,6 +51,10 @@ const home = `/${lang}/`;
           <a href={`${home}#about`}>{tr('nav.about')}</a>
           <a href={`${home}#contact`}>{tr('nav.contact')}</a>
         </nav>
+        <button class="theme" type="button" aria-label="Toggle light / dark theme" title="Light / dark">
+          <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2" /><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6" /></svg>
+          <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" /></svg>
+        </button>
         <div class="lang" aria-label="Language">
           <span class:list={[{ on: lang === 'en' }]}>{lang === 'en' ? 'EN' : <a href={switchHref}>EN</a>}</span>
           <span class="sep">/</span>
@@ -75,6 +82,14 @@ const home = `/${lang}/`;
     <div class="progress" aria-hidden="true"></div>
     <script>
       const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // Light / dark theme toggle (dark is the default).
+      document.querySelector('.theme')?.addEventListener('click', () => {
+        const root = document.documentElement;
+        const next = root.dataset.theme === 'light' ? 'dark' : 'light';
+        if (next === 'light') root.dataset.theme = 'light'; else delete root.dataset.theme;
+        try { localStorage.setItem('theme', next); } catch (e) {}
+      });
 
       // Stagger: children of [data-stagger] reveal one after another.
       document.querySelectorAll<HTMLElement>('[data-stagger]').forEach((box) => {
@@ -138,7 +153,7 @@ const home = `/${lang}/`;
   .nav {
     position: sticky; top: 0; z-index: 50;
     backdrop-filter: blur(14px) saturate(140%);
-    background: rgba(10, 12, 15, 0.72);
+    background: var(--nav-bg);
     border-bottom: 1px solid var(--line-soft);
   }
   .nav-inner { height: 64px; display: flex; align-items: center; gap: 28px; }
@@ -151,6 +166,12 @@ const home = `/${lang}/`;
   nav { display: flex; gap: 22px; margin-left: auto; font-size: 14px; color: var(--muted); }
   nav a { transition: color .2s; }
   nav a:hover { color: var(--text); }
+  .theme { width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--line); background: transparent; color: var(--muted); display: grid; place-items: center; cursor: pointer; transition: color .2s, border-color .2s; padding: 0; }
+  .theme:hover { color: var(--text); border-color: var(--muted); }
+  .theme svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+  .theme .moon { display: none; }
+  :global([data-theme='light']) .theme .sun { display: none; }
+  :global([data-theme='light']) .theme .moon { display: block; }
   .lang { font-family: var(--mono); font-size: 12px; color: var(--faint); display: flex; gap: 6px; }
   .lang .on { color: var(--text); }
   .lang a:hover { color: var(--text); }
@@ -159,10 +180,10 @@ const home = `/${lang}/`;
   .foot .muted { color: var(--faint); }
   .foot .links { margin-left: auto; display: flex; gap: 20px; color: var(--muted); }
   .foot .links a:hover { color: var(--text); }
-  @media (max-width: 1060px) { nav { display: none; } .lang { margin-left: auto; } }
+  @media (max-width: 1060px) { nav { display: none; } .theme { margin-left: auto; } }
   @media (max-width: 860px) {
     nav { display: none; }
-    .lang { margin-left: auto; }
+    .theme { margin-left: auto; }
     .brand-name { display: none; }
   }
 </style>

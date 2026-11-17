@@ -1,10 +1,10 @@
 ---
 import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
-import HeroScene from '../../components/HeroScene.astro';
+import HeroCell from '../../components/HeroCell.astro';
 import ProjectCard from '../../components/ProjectCard.astro';
 import Lab from '../../components/Lab.astro';
-import SkillSphere from '../../components/SkillSphere.astro';
+import SkillGears from '../../components/SkillGears.astro';
 import { t, type Lang } from '../../i18n/ui';
 import { profile, stats, publications, awards, certificates, experience, education, coursework, languagesSpoken } from '../../data/profile';
 
@@ -21,22 +21,26 @@ const research = all.filter((p) => p.data.category === 'research');
 
 <Base lang={lang} title={`${profile.name} — ${lang === 'en' ? 'Mechatronics Engineer' : 'Mechatronik-Ingenieur'}`} description={tr('hero.lead')}>
   <section class="hero">
-    <HeroScene lang={lang} />
+    <HeroCell lang={lang} />
     <div class="wrap hero-inner" data-parallax>
-      <p class="kicker" data-reveal>{tr('hero.eyebrow')}</p>
-      <h1 data-reveal>Anushika<br />Jayasekara</h1>
-      <p class="lead" data-reveal>{tr('hero.lead')}</p>
-      <div class="ctas" data-reveal>
-        <a class="btn primary" href="#industry">{tr('hero.cta.work')}</a>
+      <p class="status rise" style="--d:0"><span class="pulse" aria-hidden="true"></span>{tr('hero.status')}</p>
+      <h1>
+        <span class="mask" style="--d:1"><span>Anushika</span></span>
+        <span class="mask" style="--d:2"><span>Jayasekara</span></span>
+      </h1>
+      <p class="role rise" style="--d:3">{tr('hero.role')}</p>
+      <p class="lead rise" style="--d:4">{tr('hero.lead')}</p>
+      <div class="ctas rise" style="--d:5">
+        <a class="btn primary" href="#lab">{tr('hero.cta.work')}</a>
         <a class="btn" href="#contact">{tr('hero.cta.contact')}</a>
       </div>
-      <p class="explore mono" data-reveal>
-        <span>{tr('hero.explore')}</span>
-        <a href={`/${lang}/projects/snake-robot/`} data-scene="snake">{tr('hero.explore.snake')}</a>
-        <a href={`/${lang}/projects/ornithopter/`} data-scene="bird">{tr('hero.explore.bird')}</a>
-        <a href="#industry" data-scene="jig">{tr('hero.explore.jig')}</a>
-      </p>
+      <div class="meta rise" style="--d:6">
+        <span class="mono loc">Colombo, LK · <time class="clock">--:--</time></span>
+        <span class="badge de"><b>DE</b> {tr('hero.german')}</span>
+        <span class="badge"><b>EN</b> IELTS 7.0</span>
+      </div>
     </div>
+    <a class="scroll-cue mono rise" style="--d:8" href="#lab">{tr('hero.scroll')} <span aria-hidden="true">↓</span></a>
     <div class="wrap stats">
       {stats.map((s) => (
         <div class="stat" data-reveal>
@@ -91,7 +95,7 @@ const research = all.filter((p) => p.data.category === 'research');
         <h2>{tr('skills.title')}</h2>
         <p>{tr('skills.lead')}</p>
       </header>
-      <div data-reveal><SkillSphere lang={lang} /></div>
+      <div data-reveal><SkillGears lang={lang} /></div>
     </div>
   </section>
 
@@ -187,21 +191,36 @@ const research = all.filter((p) => p.data.category === 'research');
   </section>
 </Base>
 
+<script>
+  // Live local time in Colombo, shown next to the location.
+  const el = document.querySelector<HTMLElement>('.clock');
+  const tick = () => { if (el) el.textContent = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Colombo', hour: '2-digit', minute: '2-digit' }).format(new Date()); };
+  tick(); setInterval(tick, 20000);
+</script>
+
 <style>
-  .hero { position: relative; border-top: 0; padding-top: clamp(110px, 16vh, 180px); padding-bottom: 0; overflow: hidden; }
+  .hero { position: relative; border-top: 0; padding-top: clamp(100px, 15vh, 170px); padding-bottom: 0; overflow: hidden; min-height: 100vh; }
   .hero::after { content: ''; position: absolute; inset: auto 0 0 0; height: 160px; background: linear-gradient(transparent, var(--bg)); pointer-events: none; }
-  .hero-inner { position: relative; z-index: 1; display: grid; gap: 26px; max-width: var(--max); pointer-events: none; }
-  .hero-inner a, .hero-inner .lead, .hero-inner h1 { pointer-events: auto; }
-  .explore { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 11px; margin-top: 6px; }
-  .explore span { color: var(--faint); }
-  .explore a { color: var(--muted); border-bottom: 1px solid var(--line); padding-bottom: 2px; transition: color .2s, border-color .2s; }
-  .explore a:hover, .explore a:focus-visible { color: var(--accent); border-color: var(--accent); }
-  .hero-inner > * { max-width: 600px; }
+  .hero-inner { position: relative; z-index: 1; display: grid; gap: 22px; max-width: var(--max); }
+  .hero-inner > * { max-width: 620px; }
+  .status { display: inline-flex; align-items: center; gap: 10px; width: fit-content; font-size: 13px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px 6px 12px; background: color-mix(in srgb, var(--bg) 70%, transparent); }
+  .pulse { width: 8px; height: 8px; border-radius: 50%; background: #3ecf8e; box-shadow: 0 0 0 0 rgba(62,207,142,.6); animation: pulse 2s infinite; }
+  @keyframes pulse { 70% { box-shadow: 0 0 0 9px rgba(62,207,142,0); } 100% { box-shadow: 0 0 0 0 rgba(62,207,142,0); } }
+  .role { font-family: var(--mono); font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+  .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: 6px; }
+  .loc { font-size: 12px; text-transform: none; letter-spacing: .02em; margin-right: 6px; }
+  .badge { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 5px 11px; }
+  .badge b { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--accent); }
+  .badge.de { border-color: rgba(var(--accent-rgb), .45); background: var(--accent-soft); }
+  .scroll-cue { position: relative; z-index: 1; display: flex; width: fit-content; gap: 8px; margin: 70px auto 0; font-size: 11px; transition: color .2s; }
+  .scroll-cue:hover { color: var(--text); }
+  .scroll-cue span { display: inline-block; animation: nudge 1.8s ease-in-out infinite; }
+  @keyframes nudge { 50% { transform: translateY(4px); } }
   .lead { font-size: clamp(17px, 1.6vw, 20px); color: var(--muted); line-height: 1.6; }
   .ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
   .stats {
     position: relative; z-index: 1; display: grid; grid-template-columns: repeat(4, 1fr);
-    margin-top: clamp(80px, 14vh, 140px); border-top: 1px solid var(--line-soft); padding-block: 34px 70px;
+    margin-top: 40px; border-top: 1px solid var(--line-soft); padding-block: 34px 70px;
   }
   .stat { display: grid; gap: 8px; padding-right: 24px; }
   .stat + .stat { padding-left: 24px; border-left: 1px solid var(--line-soft); }
@@ -254,8 +273,9 @@ const research = all.filter((p) => p.data.category === 'research');
     .split, .about { grid-template-columns: 1fr; }
     .portrait { position: static; max-width: 280px; }
   }
+  @media (max-width: 900px) { .hero { padding-top: 400px; } }
   @media (max-width: 640px) {
-    .hero { padding-top: 46vh; }
+    .hero { padding-top: 330px; }
     .grid, .grid.two { grid-template-columns: 1fr; }
     .timeline > li, .skill { grid-template-columns: 1fr; gap: 8px; }
     .stat { padding-right: 12px; }

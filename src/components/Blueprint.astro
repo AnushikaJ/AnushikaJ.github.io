@@ -7,7 +7,7 @@ const { art, label } = Astro.props;
 <svg class="bp" viewBox="0 0 400 260" role="img" aria-label={label ?? art}>
   <defs>
     <pattern id={`g-${art}`} width="20" height="20" patternUnits="userSpaceOnUse">
-      <path d="M20 0H0V20" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1" />
+      <path d="M20 0H0V20" fill="none" style="stroke: var(--grid)" stroke-width="1" />
     </pattern>
   </defs>
   <rect width="400" height="260" fill={`url(#g-${art})`} />
@@ -83,5 +83,5 @@ const { art, label } = Astro.props;
 
 <style>
   .bp { width: 100%; height: 100%; color: var(--accent); background: var(--bg-2); }
-  .bp :global(.t) { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; fill: rgba(232, 234, 237, .55); stroke: none; }
+  .bp :global(.t) { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; fill: var(--muted); stroke: none; }
 </style>

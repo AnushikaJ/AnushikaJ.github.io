@@ -6,7 +6,7 @@ order: 13
 period: 2024 – 2025
 role: Konstruktion & Bau
 tools: [ESP32-CAM, Biomimetisches Design, Hindernisvermeidung, 3D-Druck]
-art: mudskipper
+cover: /projects/mudskipper/cover.jpg
 metrics:
   - { value: "Land + Wasser", label: kriechen und schwimmen }
 ---

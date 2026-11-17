@@ -6,7 +6,7 @@ order: 13
 period: 2024 – 2025
 role: Design & build
 tools: [ESP32-CAM, Biomimetic design, Obstacle avoidance, 3D printing]
-art: mudskipper
+cover: /projects/mudskipper/cover.jpg
 metrics:
   - { value: "Land + water", label: crawling and swimming }
 ---

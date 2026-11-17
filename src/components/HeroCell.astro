@@ -1,0 +1,226 @@
+---
+// Hero animation: a small automated work cell drawn as a live blueprint.
+// Conveyor brings a PCB → vision camera detects it → robot arm (2-link IK) picks it →
+// test jig closes its pogo-pin lid and tests it → arm stacks the passed board. Loops forever.
+import type { Lang } from '../i18n/ui';
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const labels = lang === 'en'
+  ? { vision: 'VISION · YOLO', jig: 'TEST JIG · FLASH + CAL', arm: 'ROBOT ARM · IK', out: 'PASSED', pass: 'PASS', cycle: 'CYCLE', units: 'UNITS' }
+  : { vision: 'VISION · YOLO', jig: 'PRÜFVORRICHTUNG', arm: 'ROBOTERARM · IK', out: 'GEPRÜFT', pass: 'OK', cycle: 'TAKT', units: 'STÜCK' };
+---
+
+<canvas class="cell" data-l={JSON.stringify(labels)} aria-hidden="true"></canvas>
+
+<script>
+  const canvas = document.querySelector<HTMLCanvasElement>('canvas.cell')!;
+  const ctx = canvas.getContext('2d')!;
+  const Lb = JSON.parse(canvas.dataset.l!);
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---- theme colours (re-read when the theme changes) ----
+  let C = { a: '111,183,255', text: '#e8eaed', muted: '#9098a5', bg: '#0f1216', grid: 'rgba(255,255,255,0.03)' };
+  const readTheme = () => {
+    const s = getComputedStyle(document.documentElement);
+    C = { a: s.getPropertyValue('--accent-rgb').trim(), text: s.getPropertyValue('--text').trim(), muted: s.getPropertyValue('--muted').trim(), bg: s.getPropertyValue('--bg').trim(), grid: s.getPropertyValue('--grid').trim() };
+  };
+  readTheme();
+  new MutationObserver(readTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  // ---- scene geometry (scene units, 800 × 520). The robot stands on the right; every target is to its left. ----
+  type Pt = { x: number; y: number };
+  const SH: Pt = { x: 660, y: 300 };       // shoulder joint
+  const L1 = 190, L2 = 178, TOOL = 34;     // link lengths, gripper length
+  const PICK: Pt = { x: 300, y: 352 }, JIG: Pt = { x: 462, y: 352 }, OUT: Pt = { x: 578, y: 410 }, HOME: Pt = { x: 540, y: 190 };
+  const P = (x: number, y: number): Pt => ({ x, y });
+
+  // Motion program: tool-tip targets, durations (s), gripper state, and events fired when a step starts.
+  type Step = { to: Pt; d: number; grip?: boolean; ev?: string };
+  const program: Step[] = [
+    { to: HOME, d: 0.6, ev: 'spawn' },
+    { to: HOME, d: 1.5 },                                                    // wait for the conveyor
+    { to: P(PICK.x, 270), d: 0.9 }, { to: PICK, d: 0.45 }, { to: PICK, d: 0.25, grip: true, ev: 'pick' },
+    { to: P(PICK.x, 260), d: 0.4, grip: true }, { to: P(JIG.x, 262), d: 0.9, grip: true }, { to: JIG, d: 0.45, grip: true },
+    { to: JIG, d: 0.25, ev: 'place' }, { to: P(JIG.x, 230), d: 0.45 }, { to: P(560, 200), d: 0.5, ev: 'test' },
+    { to: P(560, 200), d: 2.2, ev: 'spawn' },                                // jig testing; next board arrives
+    { to: P(JIG.x, 262), d: 0.55 }, { to: JIG, d: 0.4 }, { to: JIG, d: 0.25, grip: true, ev: 'pickjig' },
+    { to: P(JIG.x, 262), d: 0.4, grip: true }, { to: P(OUT.x, 290), d: 0.7, grip: true }, { to: P(OUT.x, OUT.y - 44), d: 0.45, grip: true },
+    { to: P(OUT.x, OUT.y - 44), d: 0.25, ev: 'drop' }, { to: P(OUT.x, 280), d: 0.45 },
+  ];
+
+  // ---- state ----
+  let w = 0, h = 0, dpr = 1, running = false, raf = 0;
+  let step = 0, stepT = 0, from: Pt = { ...HOME }, tool: Pt = { ...HOME }, grip = 0, gripTarget = 0;
+  let board: null | { x: number; y: number; where: 'belt' | 'arm' | 'jig' } = null;
+  let incoming: null | { x: number } = null;
+  let jigT = -1, units = 11, cycleStart = 0, lastCycle = 12.4, vision = 0;
+  let last = performance.now();
+  let S = 1, OX = 0, OY = 0;
+
+  const ease = (t: number) => t * t * (3 - 2 * t);
+  function ik(px: number, py: number) {
+    // The wrist sits TOOL above the tool tip (the gripper always points down). Elbow-up solution.
+    const wx = px - SH.x, wy = py - TOOL - SH.y;
+    const d = Math.min(Math.hypot(wx, wy), L1 + L2 - 1);
+    const c2 = (d * d - L1 * L1 - L2 * L2) / (2 * L1 * L2);
+    const t2 = -Math.acos(Math.max(-1, Math.min(1, c2)));
+    const t1 = Math.atan2(wy, wx) - Math.atan2(L2 * Math.sin(t2), L1 + L2 * Math.cos(t2));
+    return { t1, t2 };
+  }
+
+  function event(ev?: string) {
+    if (ev === 'spawn' && !incoming && !(board && board.where === 'belt')) incoming = { x: 34 };
+    if (ev === 'pick' && board && board.where === 'belt') board.where = 'arm';
+    if (ev === 'place' && board) { board.where = 'jig'; board.x = JIG.x; board.y = JIG.y; }
+    if (ev === 'test') jigT = 0;
+    if (ev === 'pickjig' && board) board.where = 'arm';
+    if (ev === 'drop') { board = null; units++; const now = performance.now() / 1000; if (cycleStart) lastCycle = now - cycleStart; cycleStart = now; }
+  }
+
+  function update(dt: number) {
+    const s = program[step];
+    stepT += dt / s.d;
+    const k = ease(Math.min(1, stepT));
+    tool = { x: from.x + (s.to.x - from.x) * k, y: from.y + (s.to.y - from.y) * k };
+    gripTarget = s.grip ? 1 : 0;
+    if (stepT >= 1) { from = { ...s.to }; stepT = 0; step = (step + 1) % program.length; event(program[step].ev); }
+    grip += (gripTarget - grip) * Math.min(1, dt * 12);
+    if (incoming) { incoming.x += 120 * dt; if (incoming.x >= PICK.x) { board = { x: PICK.x, y: PICK.y, where: 'belt' }; incoming = null; } }
+    if (board && board.where === 'arm') { board.x = tool.x; board.y = tool.y; }
+    const seen = (board && board.where === 'belt') || (incoming && incoming.x > PICK.x - 70);
+    vision += ((seen ? 1 : 0) - vision) * Math.min(1, dt * 6);
+    if (jigT >= 0) { jigT += dt; if (jigT > 2.2) jigT = -1; }
+  }
+
+  // ---- drawing helpers (scene units → pixels) ----
+  const X = (x: number) => OX + x * S, Y = (y: number) => OY + y * S;
+  const stroke = (a = 0.75, wdt = 1.25) => { ctx.strokeStyle = `rgba(${C.a},${a})`; ctx.lineWidth = wdt; };
+  const fillA = (a: number) => (ctx.fillStyle = `rgba(${C.a},${a})`);
+  function rect(x: number, y: number, ww: number, hh: number, f = 0.04) { ctx.beginPath(); ctx.rect(X(x), Y(y), ww * S, hh * S); fillA(f); ctx.fill(); ctx.stroke(); }
+  function line(x1: number, y1: number, x2: number, y2: number) { ctx.beginPath(); ctx.moveTo(X(x1), Y(y1)); ctx.lineTo(X(x2), Y(y2)); ctx.stroke(); }
+  function circ(x: number, y: number, r: number, fill?: string) { ctx.beginPath(); ctx.arc(X(x), Y(y), r * S, 0, Math.PI * 2); if (fill) { ctx.fillStyle = fill; ctx.fill(); } ctx.stroke(); }
+  function link(ax: number, ay: number, bx: number, by: number, r: number) {
+    const len = Math.hypot(bx - ax, by - ay) * S, ang = Math.atan2(by - ay, bx - ax);
+    ctx.save(); ctx.translate(X(ax), Y(ay)); ctx.rotate(ang); ctx.beginPath();
+    ctx.moveTo(0, -r * S); ctx.lineTo(len, -r * S); ctx.arc(len, 0, r * S, -Math.PI / 2, Math.PI / 2); ctx.lineTo(0, r * S); ctx.arc(0, 0, r * S, Math.PI / 2, 1.5 * Math.PI);
+    fillA(0.05); ctx.fill(); ctx.stroke();
+    ctx.setLineDash([3, 5]); stroke(0.25, 1); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(len, 0); ctx.stroke(); ctx.setLineDash([]);
+    ctx.restore();
+  }
+  function text(s: string, x: number, y: number, color = C.muted, size = 10) {
+    ctx.font = `500 ${Math.max(9, size * Math.min(S, 1.1))}px "JetBrains Mono", monospace`; ctx.fillStyle = color; ctx.fillText(s, X(x), Y(y));
+  }
+  function pcb(x: number, y: number) {
+    stroke(0.9, 1.2); rect(x - 26, y - 6, 52, 6, 0.18);
+    for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.rect(X(x - 20 + i * 11), Y(y - 10), 6 * S, 4 * S); ctx.stroke(); }
+  }
+
+  function frame(now: number) {
+    const dt = reduce ? 0 : Math.min(0.05, (now - last) / 1000); last = now;
+    if (!reduce) update(dt);
+    ctx.clearRect(0, 0, w, h);
+
+    // grid
+    ctx.lineWidth = 1; ctx.strokeStyle = C.grid;
+    for (let x = 0; x < w; x += 44) { ctx.beginPath(); ctx.moveTo(x + .5, 0); ctx.lineTo(x + .5, h); ctx.stroke(); }
+    for (let y = 0; y < h; y += 44) { ctx.beginPath(); ctx.moveTo(0, y + .5); ctx.lineTo(w, y + .5); ctx.stroke(); }
+
+    // floor
+    stroke(0.3, 1); line(10, 470, 800, 470); ctx.setLineDash([2, 7]); line(10, 477, 800, 477); ctx.setLineDash([]);
+
+    // conveyor
+    stroke(0.7); rect(18, 358, 322, 14, 0.03);
+    const roll = (now / 1000) * (incoming ? 6 : 0.4);
+    for (let i = 0; i < 8; i++) { const cx = 34 + i * 41; circ(cx, 365, 5); line(cx, 365, cx + 5 * Math.cos(roll), 365 + 5 * Math.sin(roll)); }
+    line(46, 372, 46, 470); line(312, 372, 312, 470);
+    if (incoming) pcb(incoming.x, PICK.y);
+    if (board && board.where === 'belt') pcb(board.x, board.y);
+
+    // vision camera + detection box
+    stroke(0.7); line(PICK.x, 40, PICK.x, 110); rect(PICK.x - 18, 110, 36, 22, 0.06); circ(PICK.x, 138, 6, C.bg);
+    ctx.setLineDash([2, 5]); stroke(0.18 + 0.25 * vision, 1); line(PICK.x - 6, 142, PICK.x - 80, 356); line(PICK.x + 6, 142, PICK.x + 80, 356); ctx.setLineDash([]);
+    text(Lb.vision, PICK.x + 26, 125);
+    const det = board && board.where === 'belt' ? board.x : incoming ? incoming.x : null;
+    if (det !== null && vision > 0.05) {
+      ctx.save(); ctx.globalAlpha = vision; stroke(1, 1.3);
+      const bx = det - 34, by = PICK.y - 20, bw = 68, bh = 26, L = 8;
+      for (const [cx, cy, sx, sy] of [[bx, by, 1, 1], [bx + bw, by, -1, 1], [bx, by + bh, 1, -1], [bx + bw, by + bh, -1, -1]]) {
+        ctx.beginPath(); ctx.moveTo(X(cx + sx * L), Y(cy)); ctx.lineTo(X(cx), Y(cy)); ctx.lineTo(X(cx), Y(cy + sy * L)); ctx.stroke();
+      }
+      ctx.fillStyle = `rgba(${C.a},0.9)`; ctx.fillRect(X(bx), Y(by - 15), 72 * S, 13 * S);
+      text(`pcb ${(0.96 + 0.03 * Math.sin(now / 300)).toFixed(2)}`, bx + 4, by - 5, C.bg, 9);
+      ctx.restore();
+    }
+
+    // test jig: nest with a hinged pogo-pin lid that closes for the test
+    stroke(0.75); rect(402, 362, 124, 26, 0.04); rect(410, 368, 28, 12, 0.08);
+    line(418, 388, 418, 470); line(510, 388, 510, 470);
+    rect(424, 356, 76, 6, 0.03);
+    const press = jigT < 0 ? 0 : jigT < 0.35 ? jigT / 0.35 : jigT < 1.8 ? 1 : Math.max(0, 1 - (jigT - 1.8) / 0.35);
+    const lid = ((-95 + ease(press) * 275) * Math.PI) / 180;     // open (up) → closed (pointing left)
+    const hx = 520, hy = 348, ll = 84;
+    ctx.save(); ctx.translate(X(hx), Y(hy)); ctx.rotate(lid);
+    ctx.beginPath(); ctx.rect(0, -5 * S, ll * S, 10 * S); fillA(0.06); ctx.fill(); stroke(0.8, 1.25); ctx.stroke();
+    for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.moveTo((16 + i * 11) * S, -5 * S); ctx.lineTo((16 + i * 11) * S, -11 * S); ctx.stroke(); }
+    ctx.restore();
+    circ(hx, hy, 4, C.bg);
+    const ok = jigT > 0.9 && jigT < 1.9;
+    ctx.beginPath(); ctx.arc(X(500), Y(375), 3.5 * S, 0, Math.PI * 2); ctx.fillStyle = ok ? 'rgba(80,210,140,0.95)' : `rgba(${C.a},0.15)`; ctx.fill();
+    text(Lb.jig, 402, 405);
+    if (jigT > 0.35 && jigT < 1.9) {
+      const prog = Math.min(1, (jigT - 0.35) / 0.55);
+      ctx.fillStyle = `rgba(${C.a},0.7)`; ctx.fillRect(X(413), Y(371), 22 * prog * S, 6 * S);
+      if (ok) text(Lb.pass, 446, 379, 'rgba(80,210,140,0.95)', 9);
+    }
+    if (board && board.where === 'jig') pcb(board.x, board.y);
+
+    // output stack
+    stroke(0.6); rect(546, 410, 64, 60, 0.03);
+    for (let i = 0; i < Math.min(units, 6); i++) { stroke(0.6, 1); rect(551, 403 - i * 5, 54, 4, 0.12); }
+    text(Lb.out, 548, 490);
+
+    // robot arm
+    const { t1, t2 } = ik(tool.x, tool.y);
+    const E = { x: SH.x + L1 * Math.cos(t1), y: SH.y + L1 * Math.sin(t1) };
+    const W = { x: E.x + L2 * Math.cos(t1 + t2), y: E.y + L2 * Math.sin(t1 + t2) };
+    stroke(0.75); rect(SH.x - 40, 440, 80, 30, 0.05); rect(SH.x - 22, 312, 44, 128, 0.05);
+    ctx.setLineDash([2, 4]); stroke(0.3, 1); ctx.beginPath(); ctx.moveTo(X(SH.x + 22), Y(430)); ctx.quadraticCurveTo(X(SH.x + 70), Y(SH.y - 20), X(E.x + 8), Y(E.y + 8)); ctx.stroke(); ctx.setLineDash([]);
+    stroke(0.9, 1.4); link(SH.x, SH.y, E.x, E.y, 15); link(E.x, E.y, W.x, W.y, 11);
+    circ(SH.x, SH.y, 12, C.bg); circ(SH.x, SH.y, 4); circ(E.x, E.y, 10, C.bg); circ(E.x, E.y, 3); circ(W.x, W.y, 7, C.bg);
+    // gripper (points straight down)
+    const g = 4 + (1 - grip) * 10;
+    line(W.x, W.y + 7, W.x, W.y + 18); line(W.x - 16, W.y + 18, W.x + 16, W.y + 18);
+    line(W.x - g - 6, W.y + 18, W.x - g - 6, W.y + TOOL); line(W.x + g + 6, W.y + 18, W.x + g + 6, W.y + TOOL);
+    if (board && board.where === 'arm') pcb(board.x, board.y + 2);
+    text(Lb.arm, SH.x - 36, 500);
+
+    // readout
+    const deg = (r: number) => ((r * 180) / Math.PI).toFixed(1).padStart(6, ' ');
+    text(`θ₁${deg(-t1)}°  θ₂${deg(-t2)}°   ${Lb.cycle} ${lastCycle.toFixed(1)} s   ${Lb.units} ${String(units).padStart(3, '0')}`, 18, 30, C.muted, 10);
+
+    if (running && !reduce) raf = requestAnimationFrame(frame);
+  }
+
+  function resize() {
+    const r = canvas.getBoundingClientRect();
+    dpr = Math.min(devicePixelRatio || 1, 2); w = r.width; h = r.height;
+    canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (w < 900) { S = Math.min(w / 820, 0.62); OX = (w - 800 * S) / 2; OY = 70; }
+    else { S = Math.min((w * 0.43) / 820, 1.0, (h * 0.78) / 520); OX = w - 800 * S - Math.max(24, w * 0.035); OY = Math.max(70, (Math.min(h, 900) - 520 * S) / 2 + 10); }
+    if (reduce) frame(performance.now());
+  }
+
+  event('spawn');
+  resize();
+  new ResizeObserver(resize).observe(canvas);
+  if (!reduce) {
+    const start = () => { if (!running) { running = true; last = performance.now(); raf = requestAnimationFrame(frame); } };
+    const stop = () => { running = false; cancelAnimationFrame(raf); };
+    new IntersectionObserver(([e]) => (e.isIntersecting ? start() : stop())).observe(canvas);
+    document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
+  }
+</script>
+
+<style>
+  .cell { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+</style>

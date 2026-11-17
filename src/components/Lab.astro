@@ -18,7 +18,7 @@ const L = {
   debug: { href: p('debugger-jig'), text: en ? 'Debugger jig' : 'Debug-Vorrichtung', x: 700, y: 300 },
   laptop: { href: profile.github, text: en ? 'Code on GitHub' : 'Code auf GitHub', x: 828, y: 282 },
   gem: { href: p('gem-machine'), text: en ? 'Gem faceting machine' : 'Facettiermaschine', x: 1010, y: 206 },
-  mud: { href: p('mudskipper'), text: en ? 'Mudskipper robot' : 'Schlammspringer-Roboter', x: 336, y: 404 },
+  mud: { href: p('mudskipper'), text: en ? 'Mudskipper robot' : 'Schlammspringer-Roboter', x: 480, y: 420 },
   boxes: { href: p('packaging'), text: en ? 'Packaging redesign' : 'Verpackungs-Redesign', x: 1112, y: 364 },
   cert: { href: `/${lang}/#publications`, text: en ? 'Publications & awards' : 'Publikationen & Auszeichnungen', x: 980, y: 30 },
   mail: { href: `/${lang}/#contact`, text: en ? 'Contact me' : 'Kontakt', x: 1120, y: 120 },
@@ -31,7 +31,7 @@ const ext = (href: string) => href.startsWith('http');
   <svg class="lab" viewBox="0 0 1200 560" role="group" aria-label={en ? 'Interactive lab: select a machine to open it' : 'Interaktive Werkstatt: Maschine auswählen'}>
     <defs>
       <pattern id="labgrid" width="24" height="24" patternUnits="userSpaceOnUse">
-        <path d="M24 0H0V24" fill="none" stroke="rgba(255,255,255,0.035)" />
+        <path d="M24 0H0V24" fill="none" style="stroke: var(--grid)" />
       </pattern>
       <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
         <feGaussianBlur stdDeviation="3.2" result="b" />
@@ -66,15 +66,20 @@ const ext = (href: string) => href.startsWith('http');
       <text x="70" y="315" class="tag">TANK · H₂O</text>
     </a>
 
-    <!-- ===== Mudskipper on the mud bank ===== -->
+    <!-- ===== Mudskipper robot crawling under the bench ===== -->
     <a href={L.mud.href} data-k="mud" class="obj" aria-label={L.mud.text}>
-      <rect class="hit" x="350" y="440" width="70" height="60" />
-      <path d="M344 500 q30 -18 82 0" stroke-dasharray="3 4" />
-      <g class="hop">
-        <path d="M358 486 q20 -16 46 -4 q8 4 10 8 q-6 4 -14 5 q-26 4 -42 -9 z" />
-        <path d="M358 486 l-10 -8 l2 10 l-4 8 z" />
-        <circle cx="402" cy="481" r="3" />
-        <path d="M384 493 l-4 7 M394 493 l2 7" />
+      <g id="lab-mud" transform="translate(480 498)">
+        <g class="mud-body">
+          <rect class="hit" x="-50" y="-40" width="92" height="44" />
+          <g class="arm a1"><path d="M6 -5 L18 1 L30 -1" /></g>
+          <path d="M-34 -3 L-22 -12 L12 -12 L16 -2 L-32 -2 Z" />
+          <path d="M-30 -8 L-46 -28 L-38 -29 L-25 -11" />
+          <rect x="4" y="-32" width="22" height="22" rx="2" />
+          <circle cx="11" cy="-24" r="3" /><circle cx="20" cy="-24" r="3" />
+          <circle cx="15.5" cy="-15" r="1.4" class="dot" />
+          <rect x="-12" y="-16" width="8" height="4" class="solid" />
+          <g class="arm a2"><path d="M8 -4 L20 3 L32 1" /></g>
+        </g>
       </g>
     </a>
 
@@ -96,7 +101,6 @@ const ext = (href: string) => href.startsWith('http');
     <g class="room">
       <rect x="410" y="392" width="500" height="12" />
       <line x1="428" y1="404" x2="428" y2="500" /><line x1="892" y1="404" x2="892" y2="500" />
-      <line x1="428" y1="470" x2="892" y2="470" stroke-dasharray="3 6" />
     </g>
 
     <!-- Calibration jig -->
@@ -222,14 +226,26 @@ const ext = (href: string) => href.startsWith('http');
     const N = 9, Lk = 22;
     const links: SVGRectElement[] = [];
     const joints: SVGCircleElement[] = [];
-    for (let i = 0; i < N; i++) { const r = document.createElementNS(NS, 'rect'); r.setAttribute('width', String(Lk - 4)); r.setAttribute('height', '9'); r.setAttribute('rx', '4.5'); r.setAttribute('y', '-4.5'); r.setAttribute('fill', 'rgba(111,183,255,0.06)'); r.setAttribute('stroke', 'rgba(111,183,255,0.75)'); r.setAttribute('stroke-width', '1.3'); g.appendChild(r); links.push(r); }
-    for (let i = 1; i < N; i++) { const c = document.createElementNS(NS, 'circle'); c.setAttribute('r', '2.6'); c.setAttribute('fill', '#0f1216'); c.setAttribute('stroke', 'rgba(111,183,255,0.85)'); c.setAttribute('stroke-width', '1.2'); g.appendChild(c); joints.push(c); }
+    for (let i = 0; i < N; i++) { const r = document.createElementNS(NS, 'rect'); r.setAttribute('width', String(Lk - 4)); r.setAttribute('height', '9'); r.setAttribute('rx', '4.5'); r.setAttribute('y', '-4.5'); r.style.fill = 'rgba(var(--accent-rgb), 0.06)'; r.style.stroke = 'rgba(var(--accent-rgb), 0.75)'; r.style.strokeWidth = '1.3'; g.appendChild(r); links.push(r); }
+    for (let i = 1; i < N; i++) { const c = document.createElementNS(NS, 'circle'); c.setAttribute('r', '2.6'); c.style.fill = 'var(--bg-2)'; c.style.stroke = 'rgba(var(--accent-rgb), 0.85)'; c.style.strokeWidth = '1.2'; g.appendChild(c); joints.push(c); }
+    const mud = document.getElementById('lab-mud');
+    const mudBody = mud?.querySelector<SVGGElement>('.mud-body');
+    const mudLabel = document.querySelector<SVGGElement>('.lab .label[data-for="mud"]');
+    const mudChip = mudLabel ? +(mudLabel.querySelector('rect')?.getAttribute('width') ?? 160) : 160;
+    let mx = 480, mdir = 1;
     let dir = 1, x = 140;
     const t0 = performance.now();
     let prev = t0;
     const draw = (now: number) => {
       const t = (now - t0) / 1000, dt = Math.min(0.05, (now - prev) / 1000); prev = now;
       if (!reduce) { x += dir * 22 * dt; if (x > 250) dir = -1; if (x < 150) dir = 1; }
+      if (!reduce && mud && mudBody) {
+        mx += mdir * 26 * dt; if (mx > 850) mdir = -1; if (mx < 470) mdir = 1;
+        const bob = Math.abs(Math.sin(t * 3.5)) * 1.5;
+        mud.setAttribute('transform', `translate(${mx.toFixed(1)} ${(498 - bob).toFixed(1)})`);
+        mudBody.setAttribute('transform', mdir < 0 ? 'scale(-1 1)' : '');
+        mudLabel?.setAttribute('transform', `translate(${(mx - mudChip / 2).toFixed(1)} 420)`);
+      }
       const y = 410 + Math.sin(t * 0.6) * 18;
       const pts = [{ x: 0, y: 0 }]; let th = 0;
       for (let i = 0; i < N; i++) { if (i) th += 0.45 * Math.sin(2.2 * t + i * 0.8); const q = pts[i]; pts.push({ x: q.x - Lk * Math.cos(th), y: q.y - Lk * Math.sin(th) }); }
@@ -256,19 +272,19 @@ const ext = (href: string) => href.startsWith('http');
   .lab :global(*) { vector-effect: non-scaling-stroke; }
   .room line, .room rect, .room path { fill: none; stroke: rgba(144, 152, 165, 0.35); stroke-width: 1.2; }
   .dim { font: 500 10px var(--mono); letter-spacing: .1em; fill: var(--faint); }
-  .tag { font: 500 9px var(--mono); letter-spacing: .08em; fill: rgba(232, 234, 237, .5); stroke: none !important; }
+  .tag { font: 500 9px var(--mono); letter-spacing: .08em; fill: var(--muted); stroke: none !important; }
   .code { font: 600 13px var(--mono); fill: currentColor; stroke: none !important; }
 
   .obj { cursor: pointer; outline: none; }
-  .obj :is(path, rect, line, circle, ellipse, use) { fill: rgba(111, 183, 255, 0.04); stroke: rgba(111, 183, 255, 0.7); stroke-width: 1.3; transition: stroke .3s, fill .3s; }
+  .obj :is(path, rect, line, circle, ellipse, use) { fill: rgba(var(--accent-rgb), 0.04); stroke: rgba(var(--accent-rgb), 0.7); stroke-width: 1.3; transition: stroke .3s, fill .3s; }
   .obj line { fill: none; }
   .obj .hit { fill: transparent; stroke: none !important; }
-  .obj .solid { fill: #0f1216; }
+  .obj .solid { fill: var(--bg-2); }
   .obj .dot { fill: currentColor; stroke: none; }
-  .obj .screen { fill: rgba(111, 183, 255, 0.08); }
+  .obj .screen { fill: rgba(var(--accent-rgb), 0.08); }
   .obj .estop { fill: rgba(255, 110, 110, 0.25); stroke: rgba(255, 130, 130, 0.7); }
   .obj .water { fill: none; stroke-dasharray: 4 4; animation: wave 3s linear infinite; }
-  .obj .flightpath { fill: none; stroke: rgba(111, 183, 255, 0.14); stroke-dasharray: 2 6; }
+  .obj .flightpath { fill: none; stroke: rgba(var(--accent-rgb), 0.14); stroke-dasharray: 2 6; }
   .obj .rib { fill: none; stroke-dasharray: 2 3; opacity: .6; }
   .obj > * { transition: opacity .35s; }
   .obj, .obj > g { transition: opacity .35s, filter .35s; }
@@ -276,10 +292,10 @@ const ext = (href: string) => href.startsWith('http');
   /* highlight the hovered object, fade the rest */
   .lab:has(.obj:hover, .obj:focus-visible) .obj:not(:hover):not(:focus-visible) { opacity: .28; }
   .obj:hover, .obj:focus-visible { filter: url(#glow); }
-  .obj:hover :is(path, rect, line, circle, ellipse):not(.hit), .obj:focus-visible :is(path, rect, line, circle, ellipse):not(.hit) { stroke: #9fd0ff; }
+  .obj:hover :is(path, rect, line, circle, ellipse):not(.hit), .obj:focus-visible :is(path, rect, line, circle, ellipse):not(.hit) { stroke: var(--accent-hi); }
 
   .label { pointer-events: none; opacity: 0; transition: opacity .3s, transform .3s; }
-  .label rect { fill: rgba(12, 15, 19, .94); stroke: rgba(111, 183, 255, .6); stroke-width: 1; }
+  .label rect { fill: var(--bg-2); stroke: rgba(var(--accent-rgb), .6); stroke-width: 1; }
   .label text { font: 600 13px var(--sans); fill: var(--text); }
   .label.on { opacity: 1; }
 
@@ -287,7 +303,7 @@ const ext = (href: string) => href.startsWith('http');
   .wing { transform-box: fill-box; animation: flap .32s ease-in-out infinite alternate; }
   .wl { transform-origin: 100% 40%; }
   .wr { transform-origin: 0% 40%; animation-name: flapR; }
-  .bubbles circle { animation: rise 4s linear infinite; fill: none; stroke: rgba(111, 183, 255, .5); }
+  .bubbles circle { animation: bubble 4s linear infinite; fill: none; stroke: rgba(var(--accent-rgb), .5); }
   .bubbles circle:nth-child(2) { animation-delay: 1.2s; } .bubbles circle:nth-child(3) { animation-delay: 2.1s; } .bubbles circle:nth-child(4) { animation-delay: 3s; }
   .calib-press { animation: press 3.6s ease-in-out infinite; }
   .flash-plate { animation: plate 4.2s ease-in-out infinite; }
@@ -299,21 +315,24 @@ const ext = (href: string) => href.startsWith('http');
   .t2 { animation-delay: .5s; } .t3 { animation-delay: 1s; }
   .dial { transform-box: view-box; transform-origin: 1014px 300px; animation: spin 12s steps(36) infinite; }
   .gem { animation: shine 2.4s ease-in-out infinite; }
-  .hop { animation: hop 3.2s ease-in-out infinite; }
+  .arm { transform-box: view-box; transform-origin: 7px -5px; animation: crawl .9s ease-in-out infinite alternate; }
+  .a2 { animation-delay: -.45s; }
+  .mud-body { transition: transform .4s; }
   .env { animation: bob 3s ease-in-out infinite; }
 
   @keyframes flap { from { transform: rotate(16deg); } to { transform: rotate(-18deg); } }
   @keyframes flapR { from { transform: rotate(-16deg); } to { transform: rotate(18deg); } }
-  @keyframes rise { from { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } to { transform: translateY(-150px); opacity: 0; } }
+  @keyframes bubble { from { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } to { transform: translateY(-150px); opacity: 0; } }
   @keyframes wave { to { stroke-dashoffset: -16; } }
   @keyframes press { 0%, 20% { transform: translateY(0); } 45%, 65% { transform: translateY(12px); } 90%, 100% { transform: translateY(0); } }
   @keyframes plate { 0%, 15% { transform: translateY(0); } 35%, 70% { transform: translateY(13px); } 90%, 100% { transform: translateY(0); } }
   @keyframes lever { 0%, 15% { transform: rotate(0); } 35%, 70% { transform: rotate(32deg); } 90%, 100% { transform: rotate(0); } }
-  @keyframes led { 0% { fill: rgba(255,255,255,.1); } 38% { fill: rgba(120,230,160,.95); } 70% { fill: rgba(255,255,255,.1); } }
+  @keyframes led { 0% { fill: rgba(var(--accent-rgb), .12); } 38% { fill: rgba(120,230,160,.95); } 70% { fill: rgba(var(--accent-rgb), .12); } }
   @keyframes type { from { stroke-dashoffset: 30; } to { stroke-dashoffset: 0; } }
   @keyframes code { 0% { stroke-dashoffset: 70; } 40%, 80% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -70; } }
   @keyframes spin { to { transform: rotate(360deg); } }
-  @keyframes shine { 0%, 100% { stroke: rgba(111,183,255,.7); } 50% { stroke: #d6ecff; } }
+  @keyframes shine { 0%, 100% { stroke: rgba(var(--accent-rgb), .7); } 50% { stroke: var(--accent-hi); } }
+  @keyframes crawl { from { transform: rotate(-10deg); } to { transform: rotate(14deg); } }
   @keyframes hop { 0%, 60%, 100% { transform: translateY(0); } 70% { transform: translateY(-12px); } 80% { transform: translateY(0); } 86% { transform: translateY(-4px); } }
   @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
   @media (prefers-reduced-motion: reduce) { .lab * { animation: none !important; } .bird animateMotion { display: none; } }

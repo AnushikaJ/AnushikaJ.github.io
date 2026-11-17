@@ -1,0 +1,166 @@
+---
+// Skills as a gear train: one gear per skill group, all meshing and turning together.
+// Hover (or tap) a gear to see that group's skills. Gear speeds follow their tooth ratios.
+import { skills } from '../data/profile';
+import type { Lang } from '../i18n/ui';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+
+const M = 7; // module (px per tooth)
+// [teeth, parent, angle to parent in degrees, skill-group index]
+const train: [number, number | null, number, number][] = [
+  [24, null, 0, 3],   // robotics & control (driver)
+  [14, 0, -30, 6],    // manufacturing
+  [20, 1, 20, 1],     // embedded
+  [12, 2, -60, 4],    // machine vision
+  [18, 0, 150, 7],    // programming
+  [13, 4, 200, 2],    // motors & sensors
+  [22, 0, 250, 0],    // CAD & design
+  [15, 6, 170, 5],    // simulation
+];
+
+type Gear = { z: number; r: number; x: number; y: number; parent: number | null; phi: number; g: number };
+const gears: Gear[] = [];
+for (const [z, parent, ang, g] of train) {
+  const r = (M * z) / 2;
+  if (parent === null) { gears.push({ z, r, x: 0, y: 0, parent, phi: 0, g }); continue; }
+  const p = gears[parent], d = p.r + r, phi = (ang * Math.PI) / 180;
+  gears.push({ z, r, x: p.x + d * Math.cos(phi), y: p.y + d * Math.sin(phi), parent, phi, g });
+}
+const pad = 24;
+const minX = Math.min(...gears.map((g) => g.x - g.r - M)) - pad, maxX = Math.max(...gears.map((g) => g.x + g.r + M)) + pad;
+const minY = Math.min(...gears.map((g) => g.y - g.r - M)) - pad, maxY = Math.max(...gears.map((g) => g.y + g.r + M)) + pad;
+
+function toothPath(z: number, r: number) {
+  const ra = r + M, rr = r - 1.25 * M, p = (2 * Math.PI) / z;
+  const pt = (a: number, rad: number) => `${(rad * Math.cos(a)).toFixed(2)} ${(rad * Math.sin(a)).toFixed(2)}`;
+  let d = '';
+  for (let k = 0; k < z; k++) {
+    const c = k * p;
+    d += `${k === 0 ? 'M' : 'L'}${pt(c - p / 2, rr)} L${pt(c - 0.27 * p, rr)} L${pt(c - 0.15 * p, ra)} L${pt(c + 0.15 * p, ra)} L${pt(c + 0.27 * p, rr)} `;
+  }
+  return d + 'Z';
+}
+const spokes = (r: number) => (r > 60 ? 5 : r > 46 ? 4 : 0);
+const groupName = (g: number) => skills[g].group[lang];
+const hint = lang === 'en' ? 'Hover a gear' : 'Zahnrad anfahren';
+---
+
+<div class="gears-block">
+  <svg class="gears" viewBox={`${minX} ${minY} ${maxX - minX} ${maxY - minY}`} role="group" aria-label={lang === 'en' ? 'Skill groups as a gear train' : 'Kompetenzbereiche als Getriebe'}>
+    {gears.map((gr, i) => (
+      <g class="gear" data-i={i} data-g={gr.g} data-z={gr.z} data-parent={gr.parent ?? ''} data-phi={gr.phi} transform={`translate(${gr.x.toFixed(2)} ${gr.y.toFixed(2)})`} tabindex="0" role="button" aria-label={groupName(gr.g)}>
+        <g class="rot">
+          <path class="teeth" d={toothPath(gr.z, gr.r)} />
+          <circle class="rim" r={gr.r - 1.25 * M - 6} />
+          {Array.from({ length: spokes(gr.r) }, (_, s) => {
+            const a = (s * 2 * Math.PI) / spokes(gr.r), r0 = gr.r * 0.24, r1 = gr.r - 1.25 * M - 6;
+            return <line class="spoke" x1={r0 * Math.cos(a)} y1={r0 * Math.sin(a)} x2={r1 * Math.cos(a)} y2={r1 * Math.sin(a)} />;
+          })}
+          <circle class="hub" r={gr.r * 0.24} />
+          <rect class="key" x="-2.5" y={-gr.r * 0.24 - 3} width="5" height="6" />
+          <circle class="bore" r={gr.r * 0.1} />
+        </g>
+        <text class="gname" y={gr.r * 0.24 + 20} text-anchor="middle">{groupName(gr.g).toUpperCase()}</text>
+      </g>
+    ))}
+  </svg>
+
+  <div class="panel" aria-live="polite">
+    <span class="mono hint">{hint}</span>
+    <div class="tabs" role="tablist">
+      {skills.map((s, gi) => <button type="button" class="tab mono" data-g={gi}>{s.group[lang]}</button>)}
+    </div>
+    {skills.map((s, gi) => (
+      <div class="group" data-g={gi} hidden={gi !== 3}>
+        <h3>{s.group[lang]}</h3>
+        <span class="mono count">{s.items.length} {lang === 'en' ? 'skills' : 'Kenntnisse'}</span>
+        <div class="chips">{s.items.map((it, k) => <span class="chip" style={`--k:${k}`}>{it}</span>)}</div>
+      </div>
+    ))}
+  </div>
+</div>
+
+<script>
+  const svg = document.querySelector<SVGSVGElement>('svg.gears')!;
+  const gears = [...svg.querySelectorAll<SVGGElement>('.gear')].map((el) => ({
+    el, rot: el.querySelector<SVGGElement>('.rot')!, z: +el.dataset.z!, parent: el.dataset.parent === '' ? null : +el.dataset.parent!, phi: +el.dataset.phi!, g: el.dataset.g!,
+  }));
+  const groups = [...document.querySelectorAll<HTMLElement>('.panel .group')];
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let theta0 = 0, speed = 0.22, target = 0.22, last = performance.now(), pinned: string | null = null;
+
+  // Angle of each gear so the teeth stay meshed with its parent.
+  function angles() {
+    const th: number[] = [];
+    gears.forEach((g, i) => {
+      if (g.parent === null) { th[i] = theta0; return; }
+      const p = gears[g.parent], tp = th[g.parent];
+      th[i] = g.phi + Math.PI - Math.PI / g.z - (tp - g.phi) * (p.z / g.z);
+    });
+    return th;
+  }
+  function draw() {
+    const th = angles();
+    gears.forEach((g, i) => g.rot.setAttribute('transform', `rotate(${((th[i] * 180) / Math.PI).toFixed(2)})`));
+  }
+  function loop(now: number) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    speed += (target - speed) * 0.06; theta0 += speed * dt;
+    draw(); requestAnimationFrame(loop);
+  }
+  draw();
+  if (!reduce) requestAnimationFrame(loop);
+
+  const show = (gid: string) => {
+    groups.forEach((el) => { const on = el.dataset.g === gid; if (on && el.hidden) { el.hidden = false; el.classList.remove('enter'); void el.offsetWidth; el.classList.add('enter'); } else if (!on) el.hidden = true; });
+    gears.forEach((g) => g.el.classList.toggle('on', g.g === gid));
+    tabs.forEach((t) => t.classList.toggle('on', t.dataset.g === gid));
+  };
+  const tabs = [...document.querySelectorAll<HTMLButtonElement>('.panel .tab')];
+  tabs.forEach((t) => {
+    t.addEventListener('mouseenter', () => { target = 0.6; show(t.dataset.g!); });
+    t.addEventListener('mouseleave', () => { target = 0.22; if (pinned) show(pinned); });
+    t.addEventListener('click', () => { pinned = t.dataset.g!; show(pinned); });
+  });
+  show('3');
+  gears.forEach((g) => {
+    g.el.addEventListener('mouseenter', () => { target = 0.6; show(g.g); });
+    g.el.addEventListener('mouseleave', () => { target = 0.22; if (pinned) show(pinned); });
+    g.el.addEventListener('focus', () => show(g.g));
+    g.el.addEventListener('click', () => { pinned = g.g; show(g.g); });
+    g.el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pinned = g.g; show(g.g); } });
+  });
+</script>
+
+<style>
+  .gears-block { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 48px; align-items: center; }
+  .gears { width: 100%; height: auto; overflow: visible; }
+  .gear { cursor: pointer; outline: none; }
+  .gear :is(path, circle, line, rect) { fill: none; stroke: rgba(var(--accent-rgb), .55); stroke-width: 1.3; vector-effect: non-scaling-stroke; transition: stroke .3s, fill .3s; }
+  .gear .teeth { fill: rgba(var(--accent-rgb), .035); }
+  .gear .spoke, .gear .rim { stroke: rgba(var(--accent-rgb), .28); }
+  .gear .hub { fill: var(--bg-2); }
+  .gear .bore { fill: var(--bg); }
+  .gear .key { fill: var(--bg); stroke: rgba(var(--accent-rgb), .4); }
+  .gname { font: 600 10px var(--mono); letter-spacing: .08em; fill: var(--text); stroke: var(--bg) !important; stroke-width: 5px !important; paint-order: stroke; stroke-linejoin: round; pointer-events: none; opacity: 0; transition: opacity .3s; }
+  .gear:hover .teeth, .gear.on .teeth, .gear:focus-visible .teeth { fill: rgba(var(--accent-rgb), .12); stroke: var(--accent); }
+  .gear:hover :is(.rim, .spoke, .hub), .gear.on :is(.rim, .spoke, .hub) { stroke: rgba(var(--accent-rgb), .7); }
+  .gear.on .gname, .gear:hover .gname, .gear:focus-visible .gname { opacity: 1; }
+
+  .panel { display: grid; gap: 14px; align-content: start; min-height: 220px; }
+  .hint { font-size: 11px; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+  .tab { font-size: 10.5px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line-soft); background: transparent; color: var(--muted); cursor: pointer; transition: color .2s, border-color .2s, background .2s; }
+  .tab:hover, .tab.on { color: var(--accent); border-color: rgba(var(--accent-rgb), .45); background: var(--accent-soft); }
+  .group h3 { font-size: clamp(24px, 2.6vw, 32px); letter-spacing: -0.02em; }
+  .count { display: block; margin: 8px 0 18px; color: var(--accent); }
+  .group .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .group .chip { font-size: 13px; color: var(--text); padding: 6px 13px; }
+  .group.enter h3, .group.enter .count { animation: up .5s cubic-bezier(.2,.7,.2,1) both; }
+  .group.enter .chip { animation: up .5s cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(var(--k) * 45ms + 80ms); }
+  @keyframes up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  @media (max-width: 900px) { .gears-block { grid-template-columns: 1fr; gap: 28px; } .panel { min-height: 0; } }
+  @media (prefers-reduced-motion: reduce) { .group.enter * { animation: none !important; } }
+</style>
