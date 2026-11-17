@@ -1,0 +1,49 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import Blueprint from './Blueprint.astro';
+import { t, type Lang } from '../i18n/ui';
+
+interface Props { project: CollectionEntry<'projects'>; lang: Lang; large?: boolean }
+const { project, lang, large = false } = Astro.props;
+const d = project.data;
+const slug = project.id.split('/').pop();
+const tr = t(lang);
+const metric = d.metrics[0];
+---
+
+<a href={`/${lang}/projects/${slug}/`} class:list={['card', { large }]} data-reveal>
+  <div class="media">
+    {d.cover ? (
+      <img src={d.cover} alt={d.title} loading="lazy" decoding="async" class:list={[d.coverFit]} />
+    ) : (
+      <Blueprint art={d.art ?? 'snake'} label={d.title} />
+    )}
+  </div>
+  <div class="body">
+    <div class="meta mono"><span>{d.period}</span>{metric && <span class="metric">{metric.value} <em>{metric.label}</em></span>}</div>
+    <h3>{d.title}</h3>
+    <p>{d.summary}</p>
+    <span class="more">{tr('card.read')} <span aria-hidden="true">→</span></span>
+  </div>
+</a>
+
+<style>
+  .card {
+    display: flex; flex-direction: column; border: 1px solid var(--line-soft); border-radius: var(--radius);
+    background: var(--bg-2); overflow: hidden; transition: border-color .3s, transform .5s cubic-bezier(.2,.7,.2,1);
+  }
+  .card:hover { border-color: var(--line); transform: translateY(-3px); }
+  .media { aspect-ratio: 4 / 3; overflow: hidden; background: #000; }
+  .large .media { aspect-ratio: 16 / 10; }
+  .media img { width: 100%; height: 100%; object-fit: cover; transition: transform 1.2s cubic-bezier(.2,.7,.2,1); }
+  .media img.contain { object-fit: contain; }
+  .card:hover .media img { transform: scale(1.035); }
+  .body { padding: 22px 22px 24px; display: grid; gap: 10px; }
+  .meta { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; }
+  .metric { color: var(--accent); text-transform: none; letter-spacing: 0; }
+  .metric em { font-style: normal; color: var(--muted); }
+  .body p { color: var(--muted); font-size: 15px; }
+  .more { font-size: 14px; color: var(--text); margin-top: 4px; }
+  .more span { display: inline-block; transition: transform .3s; }
+  .card:hover .more span { transform: translateX(4px); }
+</style>

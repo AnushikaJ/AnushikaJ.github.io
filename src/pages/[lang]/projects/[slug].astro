@@ -1,0 +1,122 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../../layouts/Base.astro';
+import Blueprint from '../../../components/Blueprint.astro';
+import { t, type Lang } from '../../../i18n/ui';
+
+export async function getStaticPaths() {
+  const all = await getCollection('projects');
+  return all.map((p) => {
+    const [lang, slug] = p.id.split('/');
+    const siblings = all
+      .filter((x) => x.id.startsWith(`${lang}/`))
+      .sort((a, b) => a.data.order - b.data.order);
+    const idx = siblings.findIndex((x) => x.id === p.id);
+    const next = siblings[(idx + 1) % siblings.length];
+    return { params: { lang, slug }, props: { project: p, next } };
+  });
+}
+
+const { project, next } = Astro.props;
+const lang = Astro.params.lang as Lang;
+const tr = t(lang);
+const d = project.data;
+const { Content } = await render(project);
+const nextSlug = next.id.split('/').pop();
+---
+
+<Base lang={lang} title={`${d.title} — Anushika Jayasekara`} description={d.summary} image={d.cover}>
+  <article>
+    <header class="wrap head">
+      <a class="back mono" href={`/${lang}/#${d.category}`}>← {tr('project.back')}</a>
+      <span class="kicker">{d.category === 'industry' ? tr('nav.industry') : tr('nav.research')}</span>
+      <h1>{d.title}</h1>
+      <p class="lead">{d.summary}</p>
+      <dl class="facts">
+        <div><dt class="mono">{tr('project.role')}</dt><dd>{d.role}</dd></div>
+        <div><dt class="mono">{tr('project.period')}</dt><dd>{d.period}</dd></div>
+        <div><dt class="mono">{tr('project.tools')}</dt><dd class="chips">{d.tools.map((x) => <span class="chip">{x}</span>)}</dd></div>
+      </dl>
+    </header>
+
+    <div class="wrap cover">
+      {d.cover ? <img src={d.cover} alt={d.title} class:list={[d.coverFit]} /> : <Blueprint art={d.art ?? 'snake'} label={d.title} />}
+    </div>
+
+    {d.metrics.length > 0 && (
+      <div class="wrap metrics">
+        {d.metrics.map((m) => (
+          <div><span class="v">{m.value}</span><span class="l">{m.label}</span></div>
+        ))}
+      </div>
+    )}
+
+    <div class="wrap prose">
+      <Content />
+    </div>
+
+    {d.gallery.length > 0 && (
+      <div class="wrap gallery">
+        <h2 class="mono">{tr('project.gallery')}</h2>
+        <div class="g-grid">
+          {d.gallery.map((g) => (
+            <figure>
+              <a href={g.src} target="_blank" rel="noopener"><img src={g.src} alt={g.caption} loading="lazy" /></a>
+              <figcaption>{g.caption}</figcaption>
+            </figure>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {d.links.length > 0 && (
+      <div class="wrap links">
+        <h2 class="mono">{tr('project.links')}</h2>
+        <div class="row">{d.links.map((l) => <a class="btn" href={l.href} target="_blank" rel="noopener">{l.label} ↗</a>)}</div>
+      </div>
+    )}
+
+    <a class="wrap next" href={`/${lang}/projects/${nextSlug}/`}>
+      <span class="mono">{tr('project.next')}</span>
+      <span class="title">{next.data.title} <span aria-hidden="true">→</span></span>
+    </a>
+  </article>
+</Base>
+
+<style>
+  .head { display: grid; gap: 18px; padding-top: 70px; padding-bottom: 50px; }
+  .back { width: fit-content; margin-bottom: 26px; transition: color .2s; }
+  .back:hover { color: var(--text); }
+  .head h1 { font-size: clamp(36px, 5.4vw, 64px); max-width: 940px; }
+  .lead { font-size: clamp(17px, 1.6vw, 20px); color: var(--muted); max-width: 760px; }
+  .facts { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 24px; margin: 26px 0 0; padding-top: 26px; border-top: 1px solid var(--line-soft); }
+  .facts dt { margin-bottom: 8px; }
+  .facts dd { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cover { border-radius: var(--radius); overflow: hidden; background: #000; border: 1px solid var(--line-soft); max-height: 78vh; display: grid; }
+  .cover img { width: 100%; height: 100%; max-height: 78vh; object-fit: cover; }
+  .cover img.contain { object-fit: contain; }
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0; margin-top: 40px; border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); }
+  .metrics > div { display: grid; gap: 6px; padding: 26px 24px 26px 0; }
+  .metrics > div + div { padding-left: 24px; border-left: 1px solid var(--line-soft); }
+  .metrics .v { font-size: clamp(26px, 3vw, 36px); font-weight: 600; letter-spacing: -0.03em; color: var(--text); }
+  .metrics .l { font-size: 14px; color: var(--muted); }
+  .prose { max-width: 760px; padding-block: 70px 30px; font-size: 17px; color: #c9ced6; }
+  .prose :global(h2) { font-size: 13px; font-family: var(--mono); font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin: 44px 0 14px; }
+  .prose :global(h2:first-child) { margin-top: 0; }
+  .prose :global(p) { margin: 0 0 16px; }
+  .prose :global(ul) { padding-left: 20px; margin: 0 0 16px; display: grid; gap: 8px; }
+  .prose :global(strong) { color: var(--text); font-weight: 600; }
+  .gallery, .links { padding-block: 30px; }
+  .gallery h2, .links h2 { font-size: 12px; margin-bottom: 20px; }
+  .g-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 22px; }
+  figure { margin: 0; display: grid; gap: 10px; }
+  figure img { border-radius: 10px; border: 1px solid var(--line-soft); background: #fff; width: 100%; }
+  figcaption { font-size: 14px; color: var(--muted); }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; }
+  .next { display: grid; gap: 10px; margin-block: 80px 100px; padding-top: 40px; border-top: 1px solid var(--line-soft); }
+  .next .title { font-size: clamp(24px, 3vw, 36px); font-weight: 600; letter-spacing: -0.02em; }
+  .next .title span { display: inline-block; transition: transform .3s; }
+  .next:hover .title span { transform: translateX(6px); }
+  @media (max-width: 760px) { .facts { grid-template-columns: 1fr 1fr; } .facts > div:last-child { grid-column: 1 / -1; } }
+</style>

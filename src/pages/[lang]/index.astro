@@ -1,0 +1,236 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import SnakeHero from '../../components/SnakeHero.astro';
+import ProjectCard from '../../components/ProjectCard.astro';
+import { t, type Lang } from '../../i18n/ui';
+import { profile, stats, publications, awards, certificates, experience, education, skills, languagesSpoken } from '../../data/profile';
+
+export function getStaticPaths() {
+  return [{ params: { lang: 'en' } }, { params: { lang: 'de' } }];
+}
+
+const lang = Astro.params.lang as Lang;
+const tr = t(lang);
+const all = (await getCollection('projects', (p) => p.id.startsWith(`${lang}/`))).sort((a, b) => a.data.order - b.data.order);
+const industry = all.filter((p) => p.data.category === 'industry');
+const research = all.filter((p) => p.data.category === 'research');
+---
+
+<Base lang={lang} title={`${profile.name} — ${lang === 'en' ? 'Mechatronics Engineer' : 'Mechatronik-Ingenieur'}`} description={tr('hero.lead')}>
+  <section class="hero">
+    <SnakeHero />
+    <div class="wrap hero-inner">
+      <p class="kicker" data-reveal>{tr('hero.eyebrow')}</p>
+      <h1 data-reveal>Anushika<br />Jayasekara</h1>
+      <p class="lead" data-reveal>{tr('hero.lead')}</p>
+      <div class="ctas" data-reveal>
+        <a class="btn primary" href="#industry">{tr('hero.cta.work')}</a>
+        <a class="btn" href="#contact">{tr('hero.cta.contact')}</a>
+      </div>
+    </div>
+    <div class="wrap stats">
+      {stats.map((s) => (
+        <div class="stat" data-reveal>
+          <span class="v">{s.value}</span>
+          <span class="l">{s.label[lang]}</span>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section id="industry">
+    <div class="wrap">
+      <header class="section-head" data-reveal>
+        <span class="kicker">{tr('industry.kicker')}</span>
+        <h2>{tr('industry.title')}</h2>
+        <p>{tr('industry.lead')}</p>
+      </header>
+      <div class="grid">
+        {industry.map((p) => <ProjectCard project={p} lang={lang} />)}
+      </div>
+    </div>
+  </section>
+
+  <section id="research">
+    <div class="wrap">
+      <header class="section-head" data-reveal>
+        <span class="kicker">{tr('research.kicker')}</span>
+        <h2>{tr('research.title')}</h2>
+        <p>{tr('research.lead')}</p>
+      </header>
+      <div class="grid two">
+        {research.map((p, i) => <ProjectCard project={p} lang={lang} large={i < 2} />)}
+      </div>
+    </div>
+  </section>
+
+  <section id="publications">
+    <div class="wrap">
+      <header class="section-head" data-reveal>
+        <span class="kicker">{tr('pubs.kicker')}</span>
+        <h2>{tr('pubs.title')}</h2>
+      </header>
+      <ol class="pubs">
+        {publications.map((p) => (
+          <li data-reveal>
+            <span class="status mono">{p.status[lang]}</span>
+            <h3>{p.title}</h3>
+            <p class="muted">{p.authors}</p>
+            <p class="muted small">{p.venue[lang]}</p>
+          </li>
+        ))}
+      </ol>
+      <div class="split">
+        <div data-reveal>
+          <h3 class="sub">{tr('pubs.awards')}</h3>
+          <ul class="awards">{awards.map((a) => <li>{a[lang]}</li>)}</ul>
+        </div>
+        <div data-reveal>
+          <h3 class="sub">{tr('pubs.certs')}</h3>
+          <div class="certs">
+            {certificates.map((c) => (
+              <a href={c.src} target="_blank" rel="noopener" class="cert">
+                <img src={c.src} alt={c.title[lang]} loading="lazy" />
+                <span class="mono">{c.title[lang]}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="about">
+    <div class="wrap">
+      <header class="section-head" data-reveal>
+        <span class="kicker">{tr('about.kicker')}</span>
+        <h2>{tr('about.title')}</h2>
+      </header>
+      <div class="about">
+        <div class="portrait" data-reveal>
+          <img src={profile.portrait} alt={profile.name} loading="lazy" />
+          <p class="mono">{languagesSpoken[lang]}</p>
+        </div>
+        <div>
+          <h3 class="sub" data-reveal>{tr('about.experience')}</h3>
+          <ol class="timeline">
+            {experience.map((e) => (
+              <li data-reveal>
+                <span class="mono">{e.period}{e.period.endsWith('– ') ? (lang === 'en' ? 'present' : 'heute') : ''}</span>
+                <div>
+                  <h3>{e.role[lang]}</h3>
+                  <p class="muted small">{e.org}</p>
+                  <ul>{e.points.map((pt) => <li>{pt[lang]}</li>)}</ul>
+                </div>
+              </li>
+            ))}
+            {education.map((e) => (
+              <li data-reveal>
+                <span class="mono">{e.period}</span>
+                <div>
+                  <h3>{e.degree[lang]}</h3>
+                  <p class="muted small">{e.school}</p>
+                  <ul><li>{e.note[lang]}</li></ul>
+                </div>
+              </li>
+            ))}
+          </ol>
+          <h3 class="sub" data-reveal>{tr('about.skills')}</h3>
+          <div class="skills">
+            {skills.map((s) => (
+              <div class="skill" data-reveal>
+                <span class="mono">{s.group[lang]}</span>
+                <div class="chips">{s.items.map((i) => <span class="chip">{i}</span>)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact" class="contact">
+    <div class="wrap" data-reveal>
+      <span class="kicker">{tr('contact.kicker')}</span>
+      <h2>{tr('contact.title')}</h2>
+      <p class="lead">{tr('contact.lead')}</p>
+      <div class="ctas">
+        <a class="btn primary" href={`mailto:${profile.email}`}>{profile.email}</a>
+        <a class="btn" href={profile.linkedin} target="_blank" rel="noopener">LinkedIn</a>
+        <a class="btn" href={profile.github} target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .hero { position: relative; border-top: 0; padding-top: clamp(110px, 16vh, 180px); padding-bottom: 0; overflow: hidden; }
+  .hero::after { content: ''; position: absolute; inset: auto 0 0 0; height: 160px; background: linear-gradient(transparent, var(--bg)); pointer-events: none; }
+  .hero-inner { position: relative; z-index: 1; display: grid; gap: 26px; max-width: var(--max); }
+  .hero-inner > * { max-width: 600px; }
+  .lead { font-size: clamp(17px, 1.6vw, 20px); color: var(--muted); line-height: 1.6; }
+  .ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+  .stats {
+    position: relative; z-index: 1; display: grid; grid-template-columns: repeat(4, 1fr);
+    margin-top: clamp(80px, 14vh, 140px); border-top: 1px solid var(--line-soft); padding-block: 34px 70px;
+  }
+  .stat { display: grid; gap: 8px; padding-right: 24px; }
+  .stat + .stat { padding-left: 24px; border-left: 1px solid var(--line-soft); }
+  .stat .v { font-size: clamp(28px, 3.2vw, 40px); font-weight: 600; letter-spacing: -0.03em; }
+  .stat .l { font-size: 14px; color: var(--muted); }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  .grid.two { grid-template-columns: repeat(2, 1fr); }
+
+  .pubs { list-style: none; padding: 0; margin: 0 0 70px; display: grid; gap: 0; }
+  .pubs li { padding: 28px 0; border-top: 1px solid var(--line-soft); display: grid; gap: 8px; }
+  .pubs li:last-child { border-bottom: 1px solid var(--line-soft); }
+  .pubs .status { color: var(--accent); }
+  .pubs h3 { font-size: clamp(19px, 2vw, 24px); max-width: 880px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 14px; }
+  .sub { font-size: 14px; font-family: var(--mono); font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 22px; }
+  .split { display: grid; grid-template-columns: 1.3fr 1fr; gap: 60px; }
+  .awards { list-style: none; padding: 0; margin: 0; display: grid; }
+  .awards li { padding: 14px 0 14px 22px; border-top: 1px solid var(--line-soft); position: relative; }
+  .awards li::before { content: ''; position: absolute; left: 0; top: 24px; width: 8px; height: 1px; background: var(--accent); }
+  .certs { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
+  .cert { display: grid; gap: 10px; }
+  .cert img { border-radius: 8px; border: 1px solid var(--line); aspect-ratio: 1 / 1.414; object-fit: cover; object-position: top; background: #fff; transition: transform .4s; }
+  .cert:hover img { transform: translateY(-3px); }
+  .cert .mono { font-size: 10px; text-transform: none; letter-spacing: 0; }
+
+  .about { display: grid; grid-template-columns: 300px 1fr; gap: 70px; align-items: start; }
+  .portrait { position: sticky; top: 100px; display: grid; gap: 16px; }
+  .portrait img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--radius); filter: grayscale(.15); border: 1px solid var(--line-soft); }
+  .portrait .mono { text-transform: none; letter-spacing: 0; font-size: 12px; line-height: 1.7; }
+  .timeline { list-style: none; padding: 0; margin: 0 0 60px; }
+  .timeline > li { display: grid; grid-template-columns: 170px 1fr; gap: 24px; padding: 24px 0; border-top: 1px solid var(--line-soft); }
+  .timeline h3 { font-size: 18px; }
+  .timeline ul { margin: 12px 0 0; padding-left: 18px; color: var(--muted); font-size: 15px; display: grid; gap: 6px; }
+  .skills { display: grid; gap: 18px; }
+  .skill { display: grid; grid-template-columns: 170px 1fr; gap: 24px; align-items: start; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .contact { padding-block: clamp(100px, 14vw, 180px); }
+  .contact .wrap { display: grid; gap: 22px; }
+  .contact h2 { font-size: clamp(38px, 6vw, 72px); }
+  .contact .lead { max-width: 640px; }
+  .contact .btn.primary { text-transform: none; }
+
+  @media (max-width: 980px) {
+    .grid { grid-template-columns: repeat(2, 1fr); }
+    .stats { grid-template-columns: repeat(2, 1fr); row-gap: 30px; }
+    .stat:nth-child(3) { padding-left: 0; border-left: 0; }
+    .split, .about { grid-template-columns: 1fr; }
+    .portrait { position: static; max-width: 280px; }
+  }
+  @media (max-width: 640px) {
+    .hero { padding-top: 46vh; }
+    .grid, .grid.two { grid-template-columns: 1fr; }
+    .timeline > li, .skill { grid-template-columns: 1fr; gap: 8px; }
+    .stat { padding-right: 12px; }
+    .stat + .stat { padding-left: 12px; }
+  }
+</style>

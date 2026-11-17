@@ -1,0 +1,112 @@
+---
+import '../styles/global.css';
+import { t, otherLang, type Lang } from '../i18n/ui';
+import { profile } from '../data/profile';
+
+interface Props {
+  lang: Lang;
+  title: string;
+  description: string;
+  image?: string;
+}
+const { lang, title, description, image = '/projects/flashing-jig/cover.jpg' } = Astro.props;
+const tr = t(lang);
+const other = otherLang(lang);
+const path = Astro.url.pathname;
+const switchHref = path.replace(new RegExp(`^/${lang}(?=/|$)`), `/${other}`);
+const home = `/${lang}/`;
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={new URL(image, Astro.site)} />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#0a0c0f" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="alternate" hreflang={other} href={new URL(switchHref, Astro.site)} />
+  </head>
+  <body>
+    <header class="nav">
+      <div class="wrap nav-inner">
+        <a href={home} class="brand" aria-label={profile.name}>
+          <span class="mark">AJ</span>
+          <span class="brand-name">Anushika Jayasekara</span>
+        </a>
+        <nav aria-label="Main">
+          <a href={`${home}#industry`}>{tr('nav.industry')}</a>
+          <a href={`${home}#research`}>{tr('nav.research')}</a>
+          <a href={`${home}#publications`}>{tr('nav.publications')}</a>
+          <a href={`${home}#about`}>{tr('nav.about')}</a>
+          <a href={`${home}#contact`}>{tr('nav.contact')}</a>
+        </nav>
+        <div class="lang" aria-label="Language">
+          <span class:list={[{ on: lang === 'en' }]}>{lang === 'en' ? 'EN' : <a href={switchHref}>EN</a>}</span>
+          <span class="sep">/</span>
+          <span class:list={[{ on: lang === 'de' }]}>{lang === 'de' ? 'DE' : <a href={switchHref}>DE</a>}</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="foot">
+      <div class="wrap foot-inner">
+        <span>© {new Date().getFullYear()} {profile.name}</span>
+        <span class="muted">{tr('footer.built')}</span>
+        <span class="links">
+          <a href={profile.linkedin} target="_blank" rel="noopener">LinkedIn</a>
+          <a href={profile.github} target="_blank" rel="noopener">GitHub</a>
+          <a href={`mailto:${profile.email}`}>Email</a>
+        </span>
+      </div>
+    </footer>
+
+    <script>
+      const io = new IntersectionObserver(
+        (entries) => entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }),
+        { rootMargin: '0px 0px -8% 0px', threshold: 0.08 }
+      );
+      document.querySelectorAll('[data-reveal]').forEach((el) => io.observe(el));
+    </script>
+  </body>
+</html>
+
+<style>
+  .nav {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(14px) saturate(140%);
+    background: rgba(10, 12, 15, 0.72);
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .nav-inner { height: 64px; display: flex; align-items: center; gap: 32px; }
+  .brand { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 15px; }
+  .mark {
+    width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 8px;
+    display: grid; place-items: center; font-family: var(--mono); font-size: 11px; color: var(--accent);
+  }
+  nav { display: flex; gap: 26px; margin-left: auto; font-size: 14px; color: var(--muted); }
+  nav a { transition: color .2s; }
+  nav a:hover { color: var(--text); }
+  .lang { font-family: var(--mono); font-size: 12px; color: var(--faint); display: flex; gap: 6px; }
+  .lang .on { color: var(--text); }
+  .lang a:hover { color: var(--text); }
+  .foot { border-top: 1px solid var(--line-soft); padding-block: 34px; font-size: 13px; }
+  .foot-inner { display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: center; }
+  .foot .muted { color: var(--faint); }
+  .foot .links { margin-left: auto; display: flex; gap: 20px; color: var(--muted); }
+  .foot .links a:hover { color: var(--text); }
+  @media (max-width: 860px) {
+    nav { display: none; }
+    .lang { margin-left: auto; }
+    .brand-name { display: none; }
+  }
+</style>

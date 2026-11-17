@@ -1,0 +1,17 @@
+---
+// Root URL: send German-language browsers to /de/, everyone else to /en/.
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Anushika Jayasekara</title>
+    <meta http-equiv="refresh" content="0; url=/en/" />
+    <link rel="canonical" href="/en/" />
+    <script is:inline>
+      var l = (navigator.language || '').toLowerCase();
+      location.replace(l.indexOf('de') === 0 ? '/de/' : '/en/');
+    </script>
+  </head>
+  <body style="background:#0a0c0f"></body>
+</html>
